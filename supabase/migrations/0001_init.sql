@@ -18,6 +18,18 @@ create extension if not exists "unaccent";      -- снятие диакрити
 create extension if not exists "fuzzystrmatch"; -- levenshtein()
 create extension if not exists "citext";        -- регистронезависимые строки
 
+-- ---------- IMMUTABLE-обёртка для unaccent ----------
+-- Стандартный unaccent() помечен STABLE и не годится для generated-колонок.
+-- Двухаргументная форма с явным словарём детерминирована — оборачиваем
+-- её в IMMUTABLE-функцию (рекомендованный приём для Supabase/Postgres).
+create or replace function immutable_unaccent(text)
+  returns text
+  language sql
+  immutable
+  parallel safe
+  strict
+as $$ select unaccent('unaccent', $1) $$;
+
 -- ---------- Утилита: обновление updated_at ----------
 create or replace function set_updated_at()
 returns trigger language plpgsql as $$
@@ -54,7 +66,7 @@ create table if not exists profiles (
   updated_at timestamptz not null default now()
 );
 
-create trigger profiles_updated_at
+create or replace trigger profiles_updated_at
   before update on profiles
   for each row execute function set_updated_at();
 
@@ -77,7 +89,7 @@ end;
 $$;
 
 drop trigger if exists on_auth_user_created on auth.users;
-create trigger on_auth_user_created
+create or replace trigger on_auth_user_created
   after insert on auth.users
   for each row execute function handle_new_user();
 
@@ -103,7 +115,7 @@ create table if not exists books (
   livelib_id text,
   title text not null,
   -- нормализованное название для fuzzy-поиска
-  title_normalized text generated always as (lower(unaccent(title))) stored,
+  title_normalized text generated always as (lower(immutable_unaccent(title))) stored,
   subtitle text,
   description text,
   cover_url text,
@@ -127,14 +139,14 @@ create index if not exists books_title_trgm
   on books using gin (title_normalized gin_trgm_ops);
 create index if not exists books_lang_idx on books (language);
 
-create trigger books_updated_at
+create or replace trigger books_updated_at
   before update on books
   for each row execute function set_updated_at();
 
 create table if not exists authors (
   id uuid primary key default gen_random_uuid(),
   name text not null,
-  name_normalized text generated always as (lower(unaccent(name))) stored,
+  name_normalized text generated always as (lower(immutable_unaccent(name))) stored,
   bio text,
   avatar_url text,
   openlibrary_author_id text,
@@ -185,7 +197,7 @@ create table if not exists user_books (
 create index if not exists user_books_status_idx on user_books (user_id, status);
 create index if not exists user_books_finished_idx on user_books (user_id, finished_at desc);
 
-create trigger user_books_updated_at
+create or replace trigger user_books_updated_at
   before update on user_books
   for each row execute function set_updated_at();
 
@@ -242,7 +254,7 @@ create table if not exists reviews (
 );
 create index if not exists reviews_book_idx on reviews (book_id);
 
-create trigger reviews_updated_at
+create or replace trigger reviews_updated_at
   before update on reviews
   for each row execute function set_updated_at();
 
@@ -265,7 +277,7 @@ create table if not exists comments (
 );
 create index if not exists comments_parent_idx on comments (parent_type, parent_id, created_at);
 
-create trigger comments_updated_at
+create or replace trigger comments_updated_at
   before update on comments
   for each row execute function set_updated_at();
 
