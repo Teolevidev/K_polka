@@ -4,7 +4,7 @@
   "private": true,
   "description": "Книжная полка — трекер книг с социальным слоем и книжным клубом",
   "engines": {
-    "node": ">=20.0.0"
+    "node": "22.x"
   },
   "packageManager": "pnpm@9.15.9",
   "scripts": {
