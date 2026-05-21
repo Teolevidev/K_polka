@@ -1,0 +1,129 @@
+{
+  "common": {
+    "appName": "Bookshelf",
+    "tagline": "Read. Track. Share.",
+    "loading": "Loading…",
+    "error": "Something went wrong",
+    "retry": "Retry",
+    "cancel": "Cancel",
+    "save": "Save",
+    "delete": "Delete",
+    "edit": "Edit",
+    "search": "Search",
+    "showAll": "Show all",
+    "more": "More",
+    "back": "Back"
+  },
+  "nav": {
+    "home": "Home",
+    "search": "Search",
+    "library": "My shelf",
+    "discover": "Discover",
+    "profile": "Profile",
+    "club": "Club",
+    "signIn": "Sign in",
+    "signOut": "Sign out",
+    "settings": "Settings"
+  },
+  "home": {
+    "heroTitle": "Your library, all in one place",
+    "heroSubtitle": "Track what you read, set goals, discover new books and share your thoughts.",
+    "heroCta": "Find a book",
+    "heroCtaSecondary": "How it works",
+    "sectionTopWeek": "Top this week",
+    "sectionNewArrivals": "Recently added",
+    "sectionCurated": "Curated shelves",
+    "sectionByGenre": "By genre",
+    "sectionFriends": "What others are reading",
+    "sectionContinue": "Continue reading"
+  },
+  "search": {
+    "title": "Search books",
+    "placeholder": "Title, author or ISBN",
+    "hint": "Search works even with typos in the author name or title",
+    "resultsFor": "Results for \"{query}\"",
+    "noResults": "Nothing found",
+    "noResultsHint": "Try a different query or add the book manually",
+    "found": "Found: {count}",
+    "searching": "Searching catalogs…",
+    "addManually": "Add manually"
+  },
+  "book": {
+    "by": "Author",
+    "authors": "Authors",
+    "pages": "{count} pages",
+    "published": "Published",
+    "isbn": "ISBN",
+    "language": "Language",
+    "genres": "Genres",
+    "description": "Description",
+    "reviews": "Reviews",
+    "noDescription": "No description yet",
+    "rating": "Rating",
+    "noRating": "No ratings",
+    "addToShelf": "Add to shelf",
+    "writeReview": "Write a review",
+    "readByCount": "{count} readers"
+  },
+  "shelf": {
+    "reading": "Reading",
+    "read": "Read",
+    "want": "Want to read",
+    "favorites": "Favorites",
+    "custom": "My shelves",
+    "addedToShelf": "Added to \"{shelf}\"",
+    "removedFromShelf": "Removed from shelf",
+    "empty": "This shelf is empty",
+    "emptyHint": "Find a book and add it here"
+  },
+  "stats": {
+    "title": "Reading stats",
+    "totalRead": "Total read",
+    "thisYear": "This year",
+    "pagesRead": "Pages read",
+    "avgRating": "Average rating",
+    "currentStreak": "Current streak",
+    "longestStreak": "Longest streak",
+    "goalTitle": "{year} reading goal",
+    "goalProgress": "{done} of {goal}",
+    "goalSet": "Set a goal",
+    "goalReached": "Goal reached!",
+    "books": "books",
+    "days": "days"
+  },
+  "auth": {
+    "signInTitle": "Sign in to Bookshelf",
+    "signInSubtitle": "Sign in to manage your library",
+    "emailLabel": "Email",
+    "emailPlaceholder": "you@example.com",
+    "magicLinkButton": "Send me a sign-in link",
+    "magicLinkSent": "Link sent! Check your email.",
+    "orContinueWith": "or continue with",
+    "google": "Google",
+    "apple": "Apple",
+    "termsNotice": "By signing in you agree to the terms of service and privacy policy."
+  },
+  "onboarding": {
+    "title": "Welcome!",
+    "subtitle": "Let's set up your profile",
+    "usernameLabel": "Username",
+    "usernameHint": "This is how other readers will see you",
+    "displayNameLabel": "Display name",
+    "goalLabel": "How many books do you want to read this year?",
+    "finish": "Done"
+  },
+  "profile": {
+    "booksRead": "read",
+    "followers": "followers",
+    "following": "following",
+    "follow": "Follow",
+    "unfollow": "Unfollow",
+    "editProfile": "Edit profile"
+  },
+  "theme": {
+    "light": "Light",
+    "dark": "Dark",
+    "system": "System",
+    "toggle": "Toggle theme"
+  }
+}

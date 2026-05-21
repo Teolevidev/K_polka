@@ -1,0 +1,129 @@
+{
+  "common": {
+    "appName": "Книжная полка",
+    "tagline": "Читайте. Отмечайте. Делитесь.",
+    "loading": "Загрузка…",
+    "error": "Что-то пошло не так",
+    "retry": "Повторить",
+    "cancel": "Отмена",
+    "save": "Сохранить",
+    "delete": "Удалить",
+    "edit": "Изменить",
+    "search": "Поиск",
+    "showAll": "Показать все",
+    "more": "Ещё",
+    "back": "Назад"
+  },
+  "nav": {
+    "home": "Главная",
+    "search": "Поиск",
+    "library": "Моя полка",
+    "discover": "Обзор",
+    "profile": "Профиль",
+    "club": "Клуб",
+    "signIn": "Войти",
+    "signOut": "Выйти",
+    "settings": "Настройки"
+  },
+  "home": {
+    "heroTitle": "Ваша библиотека — в одном месте",
+    "heroSubtitle": "Ведите список прочитанного, ставьте цели, находите новые книги и делитесь впечатлениями.",
+    "heroCta": "Найти книгу",
+    "heroCtaSecondary": "Как это работает",
+    "sectionTopWeek": "Топ недели",
+    "sectionNewArrivals": "Недавно добавили",
+    "sectionCurated": "Кураторские полки",
+    "sectionByGenre": "По жанрам",
+    "sectionFriends": "Что читают другие",
+    "sectionContinue": "Продолжить чтение"
+  },
+  "search": {
+    "title": "Поиск книг",
+    "placeholder": "Название, автор или ISBN",
+    "hint": "Поиск работает даже с опечатками в имени автора или названии",
+    "resultsFor": "Результаты по запросу «{query}»",
+    "noResults": "Ничего не нашлось",
+    "noResultsHint": "Попробуйте изменить запрос или добавить книгу вручную",
+    "found": "Найдено: {count}",
+    "searching": "Ищем по каталогам…",
+    "addManually": "Добавить вручную"
+  },
+  "book": {
+    "by": "Автор",
+    "authors": "Авторы",
+    "pages": "{count} стр.",
+    "published": "Год издания",
+    "isbn": "ISBN",
+    "language": "Язык",
+    "genres": "Жанры",
+    "description": "Описание",
+    "reviews": "Отзывы",
+    "noDescription": "Описание пока не добавлено",
+    "rating": "Рейтинг",
+    "noRating": "Нет оценок",
+    "addToShelf": "На полку",
+    "writeReview": "Написать отзыв",
+    "readByCount": "{count} читателей"
+  },
+  "shelf": {
+    "reading": "Читаю",
+    "read": "Прочитано",
+    "want": "Хочу прочесть",
+    "favorites": "Любимое",
+    "custom": "Мои полки",
+    "addedToShelf": "Добавлено на полку «{shelf}»",
+    "removedFromShelf": "Убрано с полки",
+    "empty": "Полка пуста",
+    "emptyHint": "Найдите книгу и добавьте её сюда"
+  },
+  "stats": {
+    "title": "Статистика чтения",
+    "totalRead": "Всего прочитано",
+    "thisYear": "В этом году",
+    "pagesRead": "Страниц прочитано",
+    "avgRating": "Средняя оценка",
+    "currentStreak": "Серия дней",
+    "longestStreak": "Лучшая серия",
+    "goalTitle": "Цель на {year} год",
+    "goalProgress": "{done} из {goal}",
+    "goalSet": "Поставить цель",
+    "goalReached": "Цель достигнута!",
+    "books": "книг",
+    "days": "дней"
+  },
+  "auth": {
+    "signInTitle": "Вход в Книжную полку",
+    "signInSubtitle": "Войдите, чтобы вести свою библиотеку",
+    "emailLabel": "Электронная почта",
+    "emailPlaceholder": "you@example.com",
+    "magicLinkButton": "Получить ссылку для входа",
+    "magicLinkSent": "Ссылка отправлена! Проверьте почту.",
+    "orContinueWith": "или войдите через",
+    "google": "Google",
+    "apple": "Apple",
+    "termsNotice": "Входя, вы соглашаетесь с условиями использования и политикой конфиденциальности."
+  },
+  "onboarding": {
+    "title": "Добро пожаловать!",
+    "subtitle": "Давайте настроим ваш профиль",
+    "usernameLabel": "Имя пользователя",
+    "usernameHint": "Так вас будут видеть другие читатели",
+    "displayNameLabel": "Отображаемое имя",
+    "goalLabel": "Сколько книг хотите прочитать в этом году?",
+    "finish": "Готово"
+  },
+  "profile": {
+    "booksRead": "прочитано",
+    "followers": "читателей",
+    "following": "подписок",
+    "follow": "Подписаться",
+    "unfollow": "Отписаться",
+    "editProfile": "Редактировать профиль"
+  },
+  "theme": {
+    "light": "Светлая",
+    "dark": "Тёмная",
+    "system": "Системная",
+    "toggle": "Сменить тему"
+  }
+}
