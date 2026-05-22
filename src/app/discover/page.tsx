@@ -5,7 +5,7 @@ import { showcaseSections } from '@/lib/books/showcase';
 export const metadata: Metadata = { title: 'Обзор книг' };
 
 export default function DiscoverPage() {
-  const books = [...showcaseSections.popular, ...showcaseSections.editorsChoice];
+  const books = [...showcaseSections.popular, ...showcaseSections.adminPicks];
 
   return (
     <div className="container space-y-6 py-6">

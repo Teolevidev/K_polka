@@ -16,7 +16,7 @@ interface SignInFormProps {
   appleEnabled?: boolean;
 }
 
-export function SignInForm({ next = '/', appleEnabled = false }: SignInFormProps) {
+export function SignInForm({ next = '/profile', appleEnabled = false }: SignInFormProps) {
   const [email, setEmail] = useState('');
   const [status, setStatus] = useState<Status>('idle');
   const [message, setMessage] = useState('');

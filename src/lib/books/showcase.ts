@@ -40,18 +40,19 @@ const POPULAR: ShowcaseBook[] = [
   { title: 'Великий Гэтсби', author: 'Фрэнсис Скотт Фицджеральд', isbn: '9780743273565', rating: 8.3 },
 ];
 
-const EDITORS_CHOICE: ShowcaseBook[] = [
+// «Выбор администратора» — ровно 5 книг.
+// ВРЕМЕННО статичный набор. В следующем чанке заменится на данные из БД
+// (таблица editorial_picks): администратор отмечает книги в админке,
+// пятёрка ротируется по расписанию.
+const ADMIN_PICKS: ShowcaseBook[] = [
   { title: 'Думай медленно, решай быстро', author: 'Даниэль Канеман', isbn: '9780374533557', rating: 8.7 },
   { title: 'Война и мир', author: 'Лев Толстой', isbn: '9781400079988', rating: 9.0 },
   { title: 'Властелин колец', author: 'Джон Р. Р. Толкин', isbn: '9780544003415', rating: 9.3 },
   { title: 'Гарри Поттер и философский камень', author: 'Дж. К. Роулинг', isbn: '9780747532699', rating: 9.0 },
   { title: 'Sapiens. Краткая история человечества', author: 'Юваль Ной Харари', isbn: '9780062316097', rating: 8.9 },
-  { title: 'Цветы для Элджернона', author: 'Дэниел Киз', isbn: '9780156030304', rating: 9.1 },
-  { title: 'Дюна', author: 'Фрэнк Герберт', isbn: '9780441013593', rating: 8.8 },
-  { title: 'Над пропастью во ржи', author: 'Джером Сэлинджер', isbn: '9780316769488', rating: 8.0 },
 ];
 
 export const showcaseSections = {
   popular: POPULAR.map(toCard),
-  editorsChoice: EDITORS_CHOICE.map(toCard),
+  adminPicks: ADMIN_PICKS.map(toCard),
 };
