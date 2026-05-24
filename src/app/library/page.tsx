@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import { isSupabaseConfigured } from '@/lib/supabase/env';
 import { getCurrentUser } from '@/lib/supabase/server';
+import { getUserShelfBooks } from '@/lib/shelf/queries';
 import { SignInPrompt } from '@/components/layout/sign-in-prompt';
 import { ShelfTabs } from '@/components/book/shelf-tabs';
 
@@ -13,16 +14,18 @@ export default async function LibraryPage() {
     return (
       <SignInPrompt
         title="Моя полка"
-        description="Войдите, чтобы вести полки «Читаю», «Прочитано» и «Хочу прочесть», а также собирать собственные подборки книг."
+        description="Войдите, чтобы вести полки «Читаю», «Прочитано» и «Хочу прочесть»."
         next="/library"
       />
     );
   }
 
+  const books = await getUserShelfBooks(user.id);
+
   return (
     <div className="container space-y-5 py-6">
       <h1 className="text-2xl font-semibold">Моя полка</h1>
-      <ShelfTabs />
+      <ShelfTabs books={books} />
     </div>
   );
 }

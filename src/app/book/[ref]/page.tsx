@@ -6,6 +6,9 @@ import { BookCover } from '@/components/book/book-cover';
 import { AddToShelf } from '@/components/book/add-to-shelf';
 import { Badge } from '@/components/ui/badge';
 import { plural } from '@/lib/utils';
+import { isSupabaseConfigured } from '@/lib/supabase/env';
+import { getCurrentUser } from '@/lib/supabase/server';
+import { getShelfStatusByRef } from '@/lib/shelf/queries';
 
 interface BookPageProps {
   params: Promise<{ ref: string }>;
@@ -34,6 +37,9 @@ export default async function BookPage({ params }: BookPageProps) {
   const book = await loadBook(ref);
   if (!book) notFound();
 
+  const user = isSupabaseConfigured() ? await getCurrentUser() : null;
+  const shelfStatus = user ? await getShelfStatusByRef(user.id, ref) : null;
+
   const meta: { label: string; value: string }[] = [];
   if (book.publishedDate) meta.push({ label: 'Год издания', value: book.publishedDate });
   if (book.pageCount)
@@ -50,7 +56,11 @@ export default async function BookPage({ params }: BookPageProps) {
         {/* Обложка + действия */}
         <div className="mx-auto w-40 space-y-3 sm:mx-0 sm:w-full">
           <BookCover src={book.coverUrl} title={book.title} />
-          <AddToShelf bookRef={ref} />
+          <AddToShelf
+            bookRef={ref}
+            isSignedIn={Boolean(user)}
+            currentStatus={shelfStatus}
+          />
         </div>
 
         {/* Информация */}

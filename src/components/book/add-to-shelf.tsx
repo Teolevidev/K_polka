@@ -1,12 +1,11 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { useState } from 'react';
-import { BookmarkPlus, BookOpen, Check, ChevronDown } from 'lucide-react';
+import { useState, useTransition } from 'react';
+import { BookmarkPlus, BookOpen, Check, ChevronDown, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
-
-type ShelfStatus = 'reading' | 'read' | 'want';
+import { addBookToShelf, type ShelfStatus } from '@/lib/shelf/actions';
 
 const SHELVES: { status: ShelfStatus; label: string; icon: typeof BookOpen }[] = [
   { status: 'want', label: 'Хочу прочесть', icon: BookmarkPlus },
@@ -17,70 +16,104 @@ const SHELVES: { status: ShelfStatus; label: string; icon: typeof BookOpen }[] =
 interface AddToShelfProps {
   /** Ссылка на книгу (encodeBookRef). */
   bookRef: string;
-  /** Текущий статус книги у пользователя, если есть. */
+  /** Вошёл ли пользователь. */
+  isSignedIn: boolean;
+  /** Текущий статус книги на полке пользователя, если есть. */
   currentStatus?: ShelfStatus | null;
 }
 
-/**
- * Кнопка добавления книги на полку.
- *
- * Фаза 1: серверный экшен сохранения подключается вместе с БД и авторизацией.
- * Пока выбор статуса у неавторизованного пользователя ведёт на страницу входа.
- */
-export function AddToShelf({ bookRef, currentStatus = null }: AddToShelfProps) {
+/** Кнопка добавления книги на полку с выбором статуса. */
+export function AddToShelf({
+  bookRef,
+  isSignedIn,
+  currentStatus = null,
+}: AddToShelfProps) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
-  const active = SHELVES.find((s) => s.status === currentStatus);
+  const [status, setStatus] = useState<ShelfStatus | null>(currentStatus);
+  const [error, setError] = useState<string | null>(null);
+  const [pending, startTransition] = useTransition();
 
-  function choose(status: ShelfStatus) {
+  const active = SHELVES.find((s) => s.status === status);
+
+  function choose(next: ShelfStatus) {
     setOpen(false);
-    // TODO(Фаза 1 · авторизация): заменить на server action addToShelf()
-    router.push(`/signin?next=/book/${bookRef}&intent=shelf:${status}`);
+    setError(null);
+
+    if (!isSignedIn) {
+      router.push(`/signin?next=/book/${bookRef}`);
+      return;
+    }
+
+    const prev = status;
+    setStatus(next); // оптимистично
+    startTransition(async () => {
+      const res = await addBookToShelf(bookRef, next);
+      if (!res.ok) {
+        setStatus(prev);
+        setError(res.error ?? 'Не удалось сохранить');
+      } else {
+        router.refresh();
+      }
+    });
   }
 
   return (
-    <div className="relative">
-      <Button
-        className="w-full sm:w-auto"
-        variant={active ? 'secondary' : 'default'}
-        onClick={() => setOpen((v) => !v)}
-        aria-haspopup="menu"
-        aria-expanded={open}
-      >
-        {active ? (
-          <>
-            <active.icon className="size-4" />
-            {active.label}
-          </>
-        ) : (
-          <>
-            <BookmarkPlus className="size-4" />
-            На полку
-          </>
-        )}
-        <ChevronDown className="size-4 opacity-70" />
-      </Button>
-
-      {open && (
-        <div
-          role="menu"
-          className="absolute z-20 mt-1 w-56 overflow-hidden rounded-md border border-border bg-popover shadow-lg"
+    <div className="space-y-1.5">
+      <div className="relative">
+        <Button
+          className="w-full"
+          variant={active ? 'secondary' : 'default'}
+          onClick={() => setOpen((v) => !v)}
+          disabled={pending}
+          aria-haspopup="menu"
+          aria-expanded={open}
         >
-          {SHELVES.map(({ status, label, icon: Icon }) => (
-            <button
-              key={status}
-              role="menuitem"
-              onClick={() => choose(status)}
-              className={cn(
-                'flex w-full items-center gap-2.5 px-3 py-2.5 text-left text-sm transition-colors hover:bg-secondary',
-                status === currentStatus && 'text-primary',
-              )}
-            >
-              <Icon className="size-4" aria-hidden="true" />
-              {label}
-            </button>
-          ))}
-        </div>
+          {pending ? (
+            <Loader2 className="size-4 animate-spin" />
+          ) : active ? (
+            <active.icon className="size-4" />
+          ) : (
+            <BookmarkPlus className="size-4" />
+          )}
+          {active ? active.label : 'На полку'}
+          <ChevronDown className="ml-auto size-4 opacity-70" />
+        </Button>
+
+        {open && (
+          <div
+            role="menu"
+            className="absolute z-20 mt-1 w-full overflow-hidden rounded-md border border-border bg-popover shadow-lg"
+          >
+            {SHELVES.map(({ status: s, label, icon: Icon }) => (
+              <button
+                key={s}
+                role="menuitem"
+                onClick={() => choose(s)}
+                className={cn(
+                  'flex w-full items-center gap-2.5 px-3 py-2.5 text-left text-sm transition-colors hover:bg-secondary',
+                  s === status && 'text-primary',
+                )}
+              >
+                <Icon className="size-4" aria-hidden="true" />
+                {label}
+                {s === status && <Check className="ml-auto size-4" />}
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {status && !error && (
+        <p className="text-center text-xs text-muted-foreground">
+          Книга на вашей полке
+        </p>
+      )}
+      {error && <p className="text-center text-xs text-destructive">{error}</p>}
+      {!isSignedIn && (
+        <p className="text-center text-xs text-muted-foreground">
+          Войдите, чтобы сохранять книги
+        </p>
       )}
     </div>
   );

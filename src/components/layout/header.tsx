@@ -3,9 +3,13 @@ import { Logo } from './logo';
 import { SearchBar } from './search-bar';
 import { ThemeToggle } from './theme-toggle';
 import { Button } from '@/components/ui/button';
+import { isSupabaseConfigured } from '@/lib/supabase/env';
+import { getCurrentUser } from '@/lib/supabase/server';
 
 /** Верхняя шапка приложения. */
-export function Header() {
+export async function Header() {
+  const signedIn = isSupabaseConfigured() ? Boolean(await getCurrentUser()) : false;
+
   return (
     <header className="sticky top-0 z-40 border-b border-border bg-background/85 backdrop-blur supports-[backdrop-filter]:bg-background/70">
       <div className="container flex h-16 items-center gap-4">
@@ -24,9 +28,15 @@ export function Header() {
             <Link href="/library">Моя полка</Link>
           </Button>
           <ThemeToggle />
-          <Button size="sm" asChild>
-            <Link href="/signin">Войти</Link>
-          </Button>
+          {signedIn ? (
+            <Button size="sm" asChild>
+              <Link href="/profile">Профиль</Link>
+            </Button>
+          ) : (
+            <Button size="sm" asChild>
+              <Link href="/signin">Войти</Link>
+            </Button>
+          )}
         </nav>
       </div>
 

@@ -2,27 +2,31 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { BookOpen, Check, BookmarkPlus, FolderPlus, Library } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { BookOpen, Check, BookmarkPlus, Library } from 'lucide-react';
+import { cn, plural } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
+import { BookCard } from '@/components/book/book-card';
+import type { ShelfItem } from '@/lib/shelf/queries';
+import type { ShelfStatus } from '@/lib/shelf/actions';
 
-type TabId = 'reading' | 'read' | 'want' | 'custom';
-
-const TABS: { id: TabId; label: string; icon: typeof BookOpen }[] = [
+const TABS: { id: ShelfStatus; label: string; icon: typeof BookOpen }[] = [
   { id: 'reading', label: 'Читаю', icon: BookOpen },
-  { id: 'read', label: 'Прочитано', icon: Check },
   { id: 'want', label: 'Хочу прочесть', icon: BookmarkPlus },
-  { id: 'custom', label: 'Мои полки', icon: FolderPlus },
+  { id: 'read', label: 'Прочитано', icon: Check },
 ];
 
-/**
- * Вкладки полок пользователя.
- *
- * Фаза 1: вкладки и пустые состояния. Загрузка книг с полок подключается
- * вместе с серверными запросами к БД (таблица user_books).
- */
-export function ShelfTabs() {
-  const [active, setActive] = useState<TabId>('reading');
+interface ShelfTabsProps {
+  books: ShelfItem[];
+}
+
+/** Вкладки полок пользователя с реальными книгами из БД. */
+export function ShelfTabs({ books }: ShelfTabsProps) {
+  const [active, setActive] = useState<ShelfStatus>('reading');
+  const visible = books.filter((b) => b.status === active);
+
+  function count(status: ShelfStatus) {
+    return books.filter((b) => b.status === status).length;
+  }
 
   return (
     <div className="space-y-5">
@@ -45,22 +49,45 @@ export function ShelfTabs() {
           >
             <Icon className="size-4" aria-hidden="true" />
             {label}
+            <span className="text-xs tabular-nums opacity-70">{count(id)}</span>
           </button>
         ))}
       </div>
 
-      <div className="flex flex-col items-center gap-3 py-14 text-center">
-        <Library className="size-10 text-muted-foreground/40" aria-hidden="true" />
-        <div>
-          <p className="font-medium">Полка пока пуста</p>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Найдите книгу и добавьте её сюда — она появится в этом разделе.
+      {visible.length > 0 ? (
+        <>
+          <p className="text-sm text-muted-foreground">
+            {visible.length} {plural(visible.length, 'книга', 'книги', 'книг')}
           </p>
+          <div className="grid grid-cols-3 gap-1 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8">
+            {visible.map((b) => (
+              <BookCard
+                key={b.bookId}
+                book={{
+                  title: b.title,
+                  authors: b.authors,
+                  coverUrl: b.coverUrl,
+                  href: b.href,
+                  rating: b.rating,
+                }}
+              />
+            ))}
+          </div>
+        </>
+      ) : (
+        <div className="flex flex-col items-center gap-3 py-14 text-center">
+          <Library className="size-10 text-muted-foreground/40" aria-hidden="true" />
+          <div>
+            <p className="font-medium">На этой полке пока пусто</p>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Найдите книгу и добавьте её сюда — она появится в этом разделе.
+            </p>
+          </div>
+          <Button asChild>
+            <Link href="/search">Найти книгу</Link>
+          </Button>
         </div>
-        <Button asChild>
-          <Link href="/search">Найти книгу</Link>
-        </Button>
-      </div>
+      )}
     </div>
   );
 }

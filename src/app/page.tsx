@@ -4,14 +4,23 @@ import { BookRow } from '@/components/home/book-row';
 import { showcaseSections } from '@/lib/books/showcase';
 import { isSupabaseConfigured } from '@/lib/supabase/env';
 import { getCurrentUser } from '@/lib/supabase/server';
+import { getProfile } from '@/lib/profile/queries';
+import { getReadingStats } from '@/lib/shelf/queries';
 import { emptyStats } from '@/lib/stats';
 
 export default async function HomePage() {
   const user = isSupabaseConfigured() ? await getCurrentUser() : null;
-  const userName = user ? (user.email?.split('@')[0] ?? 'Читатель') : null;
 
-  // Фаза 2: реальная статистика подтянется из БД (user_books).
-  const stats = emptyStats();
+  let userName: string | null = null;
+  let stats = emptyStats();
+  if (user) {
+    const [profile, readingStats] = await Promise.all([
+      getProfile(user.id),
+      getReadingStats(user.id),
+    ]);
+    userName = profile?.display_name ?? user.email?.split('@')[0] ?? 'Читатель';
+    stats = readingStats;
+  }
 
   return (
     <div className="space-y-10 pb-8 pt-2">
