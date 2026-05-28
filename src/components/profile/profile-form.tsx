@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
 import { updateProfile, updatePassword } from '@/lib/profile/actions';
+import { AvatarUpload } from './avatar-upload';
 import type { ProfileRow, GenreOption } from '@/lib/profile/queries';
 
 interface ProfileFormProps {
@@ -32,7 +33,6 @@ export function ProfileForm({ profile, genres, email }: ProfileFormProps) {
   const [username, setUsername] = useState(profile.username);
   const [bio, setBio] = useState(profile.bio ?? '');
   const [phone, setPhone] = useState(profile.phone ?? '');
-  const [avatarUrl, setAvatarUrl] = useState(profile.avatar_url ?? '');
   const [gender, setGender] = useState<GenderValue>(profile.gender ?? '');
   const [birthYear, setBirthYear] = useState(
     profile.birth_year ? String(profile.birth_year) : '',
@@ -70,7 +70,6 @@ export function ProfileForm({ profile, genres, email }: ProfileFormProps) {
         username,
         bio,
         phone,
-        avatarUrl,
         gender,
         birthYear,
         favoriteGenres,
@@ -134,18 +133,7 @@ export function ProfileForm({ profile, genres, email }: ProfileFormProps) {
             placeholder="+7 …"
           />
         </div>
-        <div>
-          <FieldLabel>Аватар (ссылка на изображение)</FieldLabel>
-          <Input
-            type="url"
-            value={avatarUrl}
-            onChange={(e) => setAvatarUrl(e.target.value)}
-            placeholder="https://… (можно из Gravatar или соцсети)"
-          />
-          <p className="mt-1 text-xs text-muted-foreground">
-            Загрузка с компьютера появится в следующем обновлении.
-          </p>
-        </div>
+        <AvatarUpload name={displayName || 'Я'} currentUrl={profile.avatar_url} />
         <div className="grid grid-cols-2 gap-3">
           <div>
             <FieldLabel>Пол</FieldLabel>

@@ -13,7 +13,6 @@ export interface ProfileInput {
   username: string;
   bio: string;
   phone: string;
-  avatarUrl: string;
   gender: 'male' | 'female' | 'other' | '';
   birthYear: string;
   favoriteGenres: string[];
@@ -67,7 +66,6 @@ export async function updateProfile(input: ProfileInput): Promise<ActionResult> 
       username,
       bio: input.bio.trim() || null,
       phone: input.phone.trim() || null,
-      avatar_url: input.avatarUrl.trim() || null,
       gender: input.gender || null,
       birth_year: birthYear,
       favorite_genres: input.favoriteGenres,
