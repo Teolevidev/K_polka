@@ -5,6 +5,7 @@ import { createSupabaseServerClient, getCurrentUser } from '@/lib/supabase/serve
 import { decodeBookRef } from '@/lib/books/ref';
 import { getBookByRef } from '@/lib/books/detail';
 import { findOrCreateBook } from '@/lib/books/catalog';
+import { recomputeAchievements } from '@/lib/achievements/recompute';
 
 export type ShelfStatus = 'reading' | 'read' | 'want';
 
@@ -55,6 +56,7 @@ export async function addBookToShelf(
     return { ok: false, error: e instanceof Error ? e.message : 'Ошибка' };
   }
 
+  await recomputeAchievements(user.id).catch(() => {});
   revalidatePath('/library');
   revalidatePath('/profile');
   revalidatePath(`/book/${ref}`);
@@ -82,6 +84,7 @@ export async function setShelfStatus(
     .eq('book_id', bookId);
 
   if (error) return { ok: false, error: error.message };
+  await recomputeAchievements(user.id).catch(() => {});
   revalidatePath('/library');
   revalidatePath('/profile');
   return { ok: true };
@@ -144,6 +147,7 @@ export async function setReadingGoal(target: number): Promise<ActionResult> {
     .eq('id', user.id);
 
   if (error) return { ok: false, error: error.message };
+  await recomputeAchievements(user.id).catch(() => {});
   revalidatePath('/profile');
   revalidatePath('/');
   return { ok: true };

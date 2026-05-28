@@ -6,6 +6,7 @@ import { decodeBookRef } from '@/lib/books/ref';
 import { getBookByRef } from '@/lib/books/detail';
 import { findOrCreateBook } from '@/lib/books/catalog';
 import { getAdminContext } from '@/lib/admin/auth';
+import { recomputeAchievements } from '@/lib/achievements/recompute';
 import type { ModerationStatus } from './queries';
 
 export interface ActionResult {
@@ -61,6 +62,7 @@ export async function submitReview(input: SubmitReviewInput): Promise<ActionResu
     return { ok: false, error: e instanceof Error ? e.message : 'Ошибка' };
   }
 
+  await recomputeAchievements(user.id).catch(() => {});
   revalidatePath(`/book/${input.bookRef}`);
   revalidatePath('/profile');
   revalidatePath('/profile/reviews');

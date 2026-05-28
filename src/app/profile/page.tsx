@@ -6,9 +6,12 @@ import { getCurrentUser } from '@/lib/supabase/server';
 import { getProfile, getFollowCounts } from '@/lib/profile/queries';
 import { getReadingStats } from '@/lib/shelf/queries';
 import { getUserReviews } from '@/lib/reviews/queries';
+import { getUserAchievements } from '@/lib/achievements/queries';
 import { SignInPrompt } from '@/components/layout/sign-in-prompt';
 import { StatsDashboard } from '@/components/profile/stats-dashboard';
 import { GoalSetter } from '@/components/profile/goal-setter';
+import { AchievementsSection } from '@/components/profile/achievements-section';
+import { Avatar } from '@/components/profile/avatar';
 import { SignOutButton } from '@/components/auth/sign-out-button';
 import { Button } from '@/components/ui/button';
 import { formatNumber, plural } from '@/lib/utils';
@@ -28,23 +31,21 @@ export default async function ProfilePage() {
     );
   }
 
-  const [profile, stats, counts, reviews] = await Promise.all([
+  const [profile, stats, counts, reviews, achievements] = await Promise.all([
     getProfile(user.id),
     getReadingStats(user.id),
     getFollowCounts(user.id),
     getUserReviews(user.id, user.id),
+    getUserAchievements(user.id),
   ]);
 
   const displayName = profile?.display_name ?? user.email?.split('@')[0] ?? 'Читатель';
-  const initial = displayName.charAt(0).toUpperCase();
 
   return (
     <div className="container max-w-3xl space-y-6 py-6">
       {/* Шапка профиля */}
       <div className="flex flex-wrap items-center gap-4">
-        <div className="flex size-16 items-center justify-center rounded-full bg-primary text-2xl font-bold text-primary-foreground">
-          {initial}
-        </div>
+        <Avatar name={displayName} src={profile?.avatar_url} size="lg" />
         <div className="min-w-0 flex-1">
           <h1 className="text-2xl font-semibold leading-tight">{displayName}</h1>
           {profile?.username && (
@@ -94,6 +95,8 @@ export default async function ProfilePage() {
       {!stats.goalTarget && (
         <GoalSetter year={stats.goalYear} currentTarget={null} />
       )}
+
+      <AchievementsSection achievements={achievements} />
 
       <div className="flex flex-wrap gap-2">
         <Button asChild>

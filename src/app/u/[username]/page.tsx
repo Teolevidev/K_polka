@@ -10,7 +10,10 @@ import {
   isFollowing,
 } from '@/lib/profile/queries';
 import { getUserReviews } from '@/lib/reviews/queries';
+import { getUserAchievements } from '@/lib/achievements/queries';
 import { FollowButton } from '@/components/profile/follow-button';
+import { AchievementsSection } from '@/components/profile/achievements-section';
+import { Avatar } from '@/components/profile/avatar';
 import { formatNumber, plural } from '@/lib/utils';
 
 interface PageProps {
@@ -35,25 +38,22 @@ export default async function PublicProfilePage({ params }: PageProps) {
   const me = isSupabaseConfigured() ? await getCurrentUser() : null;
   const isOwn = me?.id === profile.id;
 
-  const [counts, following, reviews] = await Promise.all([
+  const [counts, following, reviews, achievements] = await Promise.all([
     getFollowCounts(profile.id),
     me && !isOwn ? isFollowing(me.id, profile.id) : Promise.resolve(false),
     getUserReviews(profile.id, me?.id ?? null),
+    getUserAchievements(profile.id),
   ]);
 
   const visibleReviews = isOwn
     ? reviews
     : reviews.filter((r) => r.moderationStatus === 'visible');
 
-  const initial = profile.display_name.charAt(0).toUpperCase();
-
   return (
     <div className="container max-w-3xl space-y-6 py-6">
       {/* Шапка профиля */}
       <header className="flex flex-wrap items-center gap-4">
-        <div className="flex size-16 items-center justify-center rounded-full bg-primary text-2xl font-bold text-primary-foreground">
-          {initial}
-        </div>
+        <Avatar name={profile.display_name} src={profile.avatar_url} size="lg" />
         <div className="min-w-0 flex-1">
           <h1 className="text-2xl font-semibold leading-tight">
             {profile.display_name}
@@ -96,6 +96,10 @@ export default async function PublicProfilePage({ params }: PageProps) {
 
       {profile.bio && (
         <p className="text-sm leading-relaxed text-foreground/90">{profile.bio}</p>
+      )}
+
+      {achievements.length > 0 && (
+        <AchievementsSection achievements={achievements} />
       )}
 
       {/* Отзывы */}
