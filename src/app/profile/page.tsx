@@ -3,13 +3,15 @@ import Link from 'next/link';
 import { Pencil } from 'lucide-react';
 import { isSupabaseConfigured } from '@/lib/supabase/env';
 import { getCurrentUser } from '@/lib/supabase/server';
-import { getProfile } from '@/lib/profile/queries';
+import { getProfile, getFollowCounts } from '@/lib/profile/queries';
 import { getReadingStats } from '@/lib/shelf/queries';
+import { getUserReviews } from '@/lib/reviews/queries';
 import { SignInPrompt } from '@/components/layout/sign-in-prompt';
 import { StatsDashboard } from '@/components/profile/stats-dashboard';
 import { GoalSetter } from '@/components/profile/goal-setter';
 import { SignOutButton } from '@/components/auth/sign-out-button';
 import { Button } from '@/components/ui/button';
+import { formatNumber, plural } from '@/lib/utils';
 
 export const metadata: Metadata = { title: 'Профиль' };
 
@@ -26,9 +28,11 @@ export default async function ProfilePage() {
     );
   }
 
-  const [profile, stats] = await Promise.all([
+  const [profile, stats, counts, reviews] = await Promise.all([
     getProfile(user.id),
     getReadingStats(user.id),
+    getFollowCounts(user.id),
+    getUserReviews(user.id, user.id),
   ]);
 
   const displayName = profile?.display_name ?? user.email?.split('@')[0] ?? 'Читатель';
@@ -44,9 +48,31 @@ export default async function ProfilePage() {
         <div className="min-w-0 flex-1">
           <h1 className="text-2xl font-semibold leading-tight">{displayName}</h1>
           {profile?.username && (
-            <p className="text-sm text-muted-foreground">@{profile.username}</p>
+            <p className="text-sm text-muted-foreground">
+              @{profile.username}
+              <Link
+                href={`/u/${profile.username}`}
+                className="ml-2 text-primary hover:underline"
+              >
+                посмотреть как видят другие
+              </Link>
+            </p>
           )}
           <p className="text-sm text-muted-foreground">{user.email}</p>
+          <p className="mt-1 flex flex-wrap gap-x-3 text-sm text-muted-foreground">
+            <span>
+              <strong className="text-foreground">{formatNumber(counts.followers)}</strong>{' '}
+              {plural(counts.followers, 'подписчик', 'подписчика', 'подписчиков')}
+            </span>
+            <span>
+              <strong className="text-foreground">{formatNumber(counts.following)}</strong>{' '}
+              подписок
+            </span>
+            <span>
+              <strong className="text-foreground">{formatNumber(reviews.length)}</strong>{' '}
+              {plural(reviews.length, 'отзыв', 'отзыва', 'отзывов')}
+            </span>
+          </p>
         </div>
         <div className="flex gap-2">
           <Button variant="outline" size="sm" asChild>
@@ -72,6 +98,11 @@ export default async function ProfilePage() {
       <div className="flex flex-wrap gap-2">
         <Button asChild>
           <Link href="/library">Моя полка</Link>
+        </Button>
+        <Button variant="outline" asChild>
+          <Link href="/profile/reviews">
+            Мои отзывы ({formatNumber(reviews.length)})
+          </Link>
         </Button>
         <Button variant="outline" asChild>
           <Link href="/search">Найти книгу</Link>

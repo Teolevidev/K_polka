@@ -1,3 +1,4 @@
+import Link from 'next/link';
 import { Star, EyeOff, Clock } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
@@ -31,14 +32,19 @@ export function ReviewList({
       {reviews.map((r) => (
         <li key={r.id} className="rounded-lg border border-border bg-card p-4">
           <header className="mb-2 flex flex-wrap items-baseline gap-x-3 gap-y-1">
-            <span className="font-medium">
-              {r.author.displayName}
-              {r.author.username && (
+            {r.author.username ? (
+              <Link
+                href={`/u/${r.author.username}`}
+                className="font-medium hover:underline"
+              >
+                {r.author.displayName}
                 <span className="ml-1 text-sm text-muted-foreground">
                   @{r.author.username}
                 </span>
-              )}
-            </span>
+              </Link>
+            ) : (
+              <span className="font-medium">{r.author.displayName}</span>
+            )}
             {typeof r.rating === 'number' && (
               <span className="inline-flex items-center gap-1 text-sm">
                 <Star className="size-3.5 fill-accent text-accent" aria-hidden="true" />

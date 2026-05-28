@@ -42,6 +42,58 @@ export interface GenreOption {
   name: string;
 }
 
+/** Профиль по никнейму (для публичной страницы /u/[username]). */
+export async function getProfileByUsername(
+  username: string,
+): Promise<ProfileRow | null> {
+  const supabase = await createSupabaseServerClient();
+  const { data } = await supabase
+    .from('profiles')
+    .select(PROFILE_SELECT)
+    .eq('username', username)
+    .maybeSingle();
+  return (data as ProfileRow | null) ?? null;
+}
+
+export interface FollowCounts {
+  followers: number;
+  following: number;
+}
+
+/** Счётчики подписчиков и подписок. */
+export async function getFollowCounts(userId: string): Promise<FollowCounts> {
+  const supabase = await createSupabaseServerClient();
+  const [followers, following] = await Promise.all([
+    supabase
+      .from('follows')
+      .select('*', { count: 'exact', head: true })
+      .eq('followee_id', userId),
+    supabase
+      .from('follows')
+      .select('*', { count: 'exact', head: true })
+      .eq('follower_id', userId),
+  ]);
+  return {
+    followers: followers.count ?? 0,
+    following: following.count ?? 0,
+  };
+}
+
+/** Проверка: подписан ли текущий пользователь на target. */
+export async function isFollowing(
+  followerId: string,
+  followeeId: string,
+): Promise<boolean> {
+  const supabase = await createSupabaseServerClient();
+  const { data } = await supabase
+    .from('follows')
+    .select('follower_id')
+    .eq('follower_id', followerId)
+    .eq('followee_id', followeeId)
+    .maybeSingle();
+  return Boolean(data);
+}
+
 /** Список жанров для выбора любимых. */
 export async function getGenres(): Promise<GenreOption[]> {
   const supabase = await createSupabaseServerClient();
