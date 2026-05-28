@@ -54,9 +54,12 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
             Модерация публичных отзывов читателей
           </p>
         </div>
-        <span className="ml-auto text-xs text-muted-foreground">
-          Вы вошли как {admin.role}
-        </span>
+        <Link
+          href="/admin/editorial"
+          className="ml-auto text-sm font-medium text-primary hover:underline"
+        >
+          Выбор администратора →
+        </Link>
       </header>
 
       <nav className="flex flex-wrap gap-1 border-b border-border">

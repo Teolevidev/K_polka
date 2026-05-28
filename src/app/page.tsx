@@ -6,13 +6,34 @@ import { isSupabaseConfigured } from '@/lib/supabase/env';
 import { getCurrentUser } from '@/lib/supabase/server';
 import { getProfile } from '@/lib/profile/queries';
 import { getReadingStats } from '@/lib/shelf/queries';
+import { getCurrentEditorialPicks } from '@/lib/editorial/queries';
 import { emptyStats } from '@/lib/stats';
+import type { BookCardData } from '@/components/book/book-card';
 
 export default async function HomePage() {
   const user = isSupabaseConfigured() ? await getCurrentUser() : null;
 
   let userName: string | null = null;
   let stats = emptyStats();
+  let adminPicks: BookCardData[] = showcaseSections.adminPicks;
+
+  // Маркированные администратором книги — если есть; иначе статичная витрина.
+  if (isSupabaseConfigured()) {
+    try {
+      const live = await getCurrentEditorialPicks();
+      if (live.length > 0) {
+        adminPicks = live.map((p) => ({
+          title: p.title,
+          authors: p.authors ? p.authors.split(', ').filter(Boolean) : [],
+          coverUrl: p.coverUrl,
+          href: `/book/${p.bookRef}`,
+        }));
+      }
+    } catch {
+      // fallback на статичную подборку
+    }
+  }
+
   if (user) {
     const [profile, readingStats] = await Promise.all([
       getProfile(user.id),
@@ -41,7 +62,7 @@ export default async function HomePage() {
       <BookRow
         title="Выбор администратора этой недели"
         subtitle="Пять книг, которые советует команда «Книжной полки»"
-        books={showcaseSections.adminPicks}
+        books={adminPicks}
         showAllHref="/discover"
       />
     </div>
