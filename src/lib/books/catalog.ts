@@ -1,5 +1,6 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { NormalizedBook } from './types';
+import { decodeBookRef } from './ref';
 
 /**
  * Каталог книг в нашей БД.
@@ -78,4 +79,30 @@ export async function findOrCreateBook(
     throw new Error(`Не удалось сохранить книгу в каталог: ${error?.message ?? ''}`);
   }
   return created.id as string;
+}
+
+/**
+ * Ищет книгу в каталоге по ссылке источника без создания.
+ * Возвращает UUID каталоговой книги или null, если её ещё нет.
+ */
+export async function findCatalogBookIdByRef(
+  supabase: SupabaseClient,
+  ref: string,
+): Promise<string | null> {
+  const decoded = decodeBookRef(ref);
+  if (!decoded) return null;
+  const column =
+    decoded.source === 'google'
+      ? 'google_books_id'
+      : decoded.source === 'openlibrary'
+        ? 'openlibrary_work_id'
+        : null;
+  if (!column) return null;
+
+  const { data } = await supabase
+    .from('books')
+    .select('id')
+    .eq(column, decoded.sourceId)
+    .maybeSingle();
+  return (data?.id as string | undefined) ?? null;
 }

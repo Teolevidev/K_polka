@@ -7,8 +7,12 @@ import { AddToShelf } from '@/components/book/add-to-shelf';
 import { Badge } from '@/components/ui/badge';
 import { plural } from '@/lib/utils';
 import { isSupabaseConfigured } from '@/lib/supabase/env';
-import { getCurrentUser } from '@/lib/supabase/server';
+import { getCurrentUser, createSupabaseServerClient } from '@/lib/supabase/server';
 import { getShelfStatusByRef } from '@/lib/shelf/queries';
+import { findCatalogBookIdByRef } from '@/lib/books/catalog';
+import { getBookReviews, getMyReviewForBook } from '@/lib/reviews/queries';
+import { ReviewList } from '@/components/reviews/review-list';
+import { ReviewForm } from '@/components/reviews/review-form';
 
 interface BookPageProps {
   params: Promise<{ ref: string }>;
@@ -39,6 +43,17 @@ export default async function BookPage({ params }: BookPageProps) {
 
   const user = isSupabaseConfigured() ? await getCurrentUser() : null;
   const shelfStatus = user ? await getShelfStatusByRef(user.id, ref) : null;
+
+  // Отзывы: ищем книгу в каталоге; если её ещё нет — отзывов нет, форма создаст.
+  const supabase = isSupabaseConfigured() ? await createSupabaseServerClient() : null;
+  const catalogBookId = supabase
+    ? await findCatalogBookIdByRef(supabase, ref)
+    : null;
+  const reviews = catalogBookId
+    ? await getBookReviews(catalogBookId, user?.id ?? null)
+    : [];
+  const myReview =
+    user && catalogBookId ? await getMyReviewForBook(user.id, catalogBookId) : null;
 
   const meta: { label: string; value: string }[] = [];
   if (book.publishedDate) meta.push({ label: 'Год издания', value: book.publishedDate });
@@ -115,13 +130,18 @@ export default async function BookPage({ params }: BookPageProps) {
         </div>
       </div>
 
-      {/* Отзывы — наполнятся в Фазе 2 */}
-      <section className="mt-10 border-t border-border pt-8">
+      {/* Отзывы */}
+      <section className="mt-10 space-y-5 border-t border-border pt-8">
         <h2 className="text-xl font-semibold">Отзывы</h2>
-        <p className="mt-2 text-sm text-muted-foreground">
-          Отзывы и оценки появятся в следующем обновлении. Добавьте книгу на полку,
-          чтобы вернуться к ней позже.
-        </p>
+        <ReviewForm
+          bookRef={ref}
+          isSignedIn={Boolean(user)}
+          initial={myReview}
+        />
+        <ReviewList
+          reviews={reviews.filter((r) => !r.isMine)}
+          emptyText="Будьте первым, кто оставит отзыв на эту книгу."
+        />
       </section>
     </div>
   );

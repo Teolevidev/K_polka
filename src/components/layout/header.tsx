@@ -5,10 +5,12 @@ import { ThemeToggle } from './theme-toggle';
 import { Button } from '@/components/ui/button';
 import { isSupabaseConfigured } from '@/lib/supabase/env';
 import { getCurrentUser } from '@/lib/supabase/server';
+import { getAdminContext } from '@/lib/admin/auth';
 
 /** Верхняя шапка приложения. */
 export async function Header() {
   const signedIn = isSupabaseConfigured() ? Boolean(await getCurrentUser()) : false;
+  const admin = signedIn ? await getAdminContext() : null;
 
   return (
     <header className="sticky top-0 z-40 border-b border-border bg-background/85 backdrop-blur supports-[backdrop-filter]:bg-background/70">
@@ -27,6 +29,11 @@ export async function Header() {
           <Button variant="ghost" size="sm" asChild className="hidden sm:inline-flex">
             <Link href="/library">Моя полка</Link>
           </Button>
+          {admin && (
+            <Button variant="ghost" size="sm" asChild className="hidden sm:inline-flex">
+              <Link href="/admin">Админка</Link>
+            </Button>
+          )}
           <ThemeToggle />
           {signedIn ? (
             <Button size="sm" asChild>
