@@ -27,6 +27,11 @@ export interface NormalizedBook {
   language: string | null;
   genres: string[];
   mediaType: MediaType;
+  /**
+   * Кол-во известных изданий книги (signal каноничности).
+   * OpenLibrary возвращает в поле edition_count; Google Books — нет.
+   */
+  editionCount?: number;
 }
 
 export interface SearchResultBook extends NormalizedBook {

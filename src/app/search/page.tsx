@@ -5,7 +5,7 @@ import { searchBooks } from '@/lib/books/search';
 import { encodeBookRef } from '@/lib/books/ref';
 import { detectQueryKind } from '@/lib/books/isbn';
 import { SearchBar } from '@/components/layout/search-bar';
-import { BookCard } from '@/components/book/book-card';
+import { SearchResultsView } from '@/components/book/search-results-view';
 import { Button } from '@/components/ui/button';
 import { plural } from '@/lib/utils';
 
@@ -68,19 +68,14 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
             {plural(data.results.length, 'книга', 'книги', 'книг')}
           </p>
 
-          <div className="grid grid-cols-3 gap-1 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8">
-            {data.results.map((book) => (
-              <BookCard
-                key={`${book.source}-${book.sourceId}`}
-                book={{
-                  title: book.title,
-                  authors: book.authors,
-                  coverUrl: book.coverUrl,
-                  href: `/book/${encodeBookRef(book.source, book.sourceId)}`,
-                }}
-              />
-            ))}
-          </div>
+          <SearchResultsView
+            books={data.results.map((book) => ({
+              title: book.title,
+              authors: book.authors,
+              coverUrl: book.coverUrl,
+              href: `/book/${encodeBookRef(book.source, book.sourceId)}`,
+            }))}
+          />
 
           {data.failedSources.length > 0 && (
             <p className="text-xs text-muted-foreground">

@@ -14,20 +14,25 @@ import { searchOpenLibrary } from './openlibrary';
  *
  * Стратегия:
  *  1. Параллельно опрашиваем источники с тайм-аутом.
- *  2. Дедуплицируем результаты (по ISBN-13, затем по «название + автор»).
- *  3. Скорим каждый результат через fuzzy-сопоставление с запросом
- *     (терпимо к опечаткам в авторе/названии).
- *  4. Сортируем по score, при равенстве — по числу подтвердивших источников.
+ *  2. Группируем по произведению (название + первый автор), а не по изданию —
+ *     разные ISBN одной книги схлопываются в одну карточку.
+ *  3. Скорим: точное совпадение названия → большой бонус, «мусор»
+ *     (sparknotes, summary, notes, study guide…) → штраф.
+ *  4. Сортируем: score → число изданий (edition_count) → число источников.
  */
 
-const SOURCE_TIMEOUT_MS = 6000;
+const SOURCE_TIMEOUT_MS = 12_000;
 
-/** Ключ дедупликации книги. */
+const NOISE_PATTERN =
+  /\b(spark ?notes|cliffs ?notes|study guide|study notes|summary of|guide to|adaptation|notes on)\b/i;
+
+/** Ключ группировки книги по произведению. */
 function dedupeKey(book: NormalizedBook): string {
-  if (book.isbn13) return `isbn:${book.isbn13}`;
   const title = normalizeText(book.title);
   const author = normalizeText(book.authors[0] ?? '');
-  return `ta:${title}|${author}`;
+  if (title && author) return `ta:${title}|${author}`;
+  if (book.isbn13) return `isbn:${book.isbn13}`;
+  return `t:${title || book.sourceId}`;
 }
 
 /** Сливает две версии одной книги, выбирая более полные поля. */
@@ -47,10 +52,10 @@ function mergeBooks(a: NormalizedBook, b: NormalizedBook): NormalizedBook {
     language: a.language ?? b.language,
     authors: a.authors.length >= b.authors.length ? a.authors : b.authors,
     genres: Array.from(new Set([...a.genres, ...b.genres])),
+    editionCount: Math.max(a.editionCount ?? 1, b.editionCount ?? 1),
   };
 }
 
-/** Запускает источник с тайм-аутом; при ошибке возвращает пустой результат. */
 async function runSource(
   name: BookSource,
   fn: (signal: AbortSignal) => Promise<NormalizedBook[]>,
@@ -67,15 +72,36 @@ async function runSource(
   }
 }
 
-/** Скор книги относительно запроса: лучшее из совпадений по названию и автору. */
+/**
+ * Скор книги. Учитывает:
+ *  - совпадение названия (fuzzy),
+ *  - точное совпадение названия → большой бонус,
+ *  - совпадение автора,
+ *  - штраф за «мусор» в названии.
+ */
 function scoreBook(book: NormalizedBook, query: string): number {
+  const nq = normalizeText(query);
+  const nt = normalizeText(book.title);
+
   const titleText = [book.title, book.subtitle].filter(Boolean).join(' ');
   const titleScore = fuzzyScore(query, titleText);
   const authorScore = book.authors.length
     ? Math.max(...book.authors.map((a) => fuzzyScore(query, a)))
     : 0;
-  // Название важнее автора; комбинируем с приоритетом названия.
-  return Math.max(titleScore, authorScore * 0.85);
+
+  let score = Math.max(titleScore, authorScore * 0.85);
+
+  if (nt === nq && nq.length >= 2) {
+    // точное совпадение названия — почти гарантированный топ
+    score = Math.min(1, score + 0.35);
+  } else if (nt.startsWith(nq) && nq.length >= 3) {
+    score = Math.min(1, score + 0.12);
+  }
+
+  if (NOISE_PATTERN.test(book.title)) {
+    score = Math.max(0, score - 0.3);
+  }
+  return Number(score.toFixed(4));
 }
 
 export async function searchBooks(rawQuery: string): Promise<BookSearchResponse> {
@@ -87,13 +113,12 @@ export async function searchBooks(rawQuery: string): Promise<BookSearchResponse>
   const kind = detectQueryKind(query);
   const isbn = kind === 'isbn';
 
-  // ISBNdb и LiveLib подключаются в следующих итерациях Фазы 1.
   const sourceResults = await Promise.all([
     runSource('google', (signal) =>
-      searchGoogleBooks(query, { isbn, signal, limit: 24 }),
+      searchGoogleBooks(query, { isbn, signal, limit: 30 }),
     ),
     runSource('openlibrary', (signal) =>
-      searchOpenLibrary(query, { isbn, signal, limit: 24 }),
+      searchOpenLibrary(query, { isbn, signal, limit: 30 }),
     ),
   ]);
 
@@ -103,7 +128,7 @@ export async function searchBooks(rawQuery: string): Promise<BookSearchResponse>
     (r.ok ? respondedSources : failedSources).push(r.source);
   }
 
-  // Дедупликация со слиянием
+  // Группировка по произведению
   const merged = new Map<string, { book: NormalizedBook; sources: Set<BookSource> }>();
   for (const result of sourceResults) {
     for (const book of result.books) {
@@ -118,23 +143,29 @@ export async function searchBooks(rawQuery: string): Promise<BookSearchResponse>
     }
   }
 
-  // Скоринг и сортировка
-  const results: SearchResultBook[] = Array.from(merged.values())
+  const scored: SearchResultBook[] = Array.from(merged.values())
     .map(({ book, sources }) => ({
       ...book,
       score: isbn ? 1 : scoreBook(book, query),
       sources: Array.from(sources),
     }))
-    .filter((b) => isbn || b.score >= 0.3)
-    .sort((a, b) => {
-      if (b.score !== a.score) return b.score - a.score;
-      if (b.sources.length !== a.sources.length) {
-        return b.sources.length - a.sources.length;
-      }
-      // при равенстве отдаём приоритет книгам с обложкой
-      return (b.coverUrl ? 1 : 0) - (a.coverUrl ? 1 : 0);
-    })
-    .slice(0, 40);
+    .filter((b) => isbn || b.score >= 0.25);
 
-  return { query, results, respondedSources, failedSources };
+  // Сортировка: score → editionCount → sourceCount → есть обложка
+  scored.sort((a, b) => {
+    if (b.score !== a.score) return b.score - a.score;
+    const editionDelta = (b.editionCount ?? 1) - (a.editionCount ?? 1);
+    if (editionDelta !== 0) return editionDelta;
+    if (b.sources.length !== a.sources.length) {
+      return b.sources.length - a.sources.length;
+    }
+    return (b.coverUrl ? 1 : 0) - (a.coverUrl ? 1 : 0);
+  });
+
+  return {
+    query,
+    results: scored.slice(0, 50),
+    respondedSources,
+    failedSources,
+  };
 }

@@ -22,6 +22,7 @@ const FIELDS = [
   'number_of_pages_median',
   'language',
   'subject',
+  'edition_count',
 ].join(',');
 
 interface OpenLibraryDoc {
@@ -35,6 +36,7 @@ interface OpenLibraryDoc {
   number_of_pages_median?: number;
   language?: string[];
   subject?: string[];
+  edition_count?: number;
 }
 
 interface OpenLibraryResponse {
@@ -85,6 +87,7 @@ function normalizeDoc(doc: OpenLibraryDoc): NormalizedBook | null {
     language: langCode ? (LANG_MAP[langCode] ?? langCode) : null,
     genres: (doc.subject ?? []).slice(0, 8),
     mediaType: 'book',
+    editionCount: doc.edition_count ?? 1,
   };
 }
 
