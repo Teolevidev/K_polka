@@ -24,6 +24,9 @@ export async function Header() {
 
         <nav className="ml-auto flex items-center gap-1">
           <Button variant="ghost" size="sm" asChild className="hidden sm:inline-flex">
+            <Link href="/blog">Блог</Link>
+          </Button>
+          <Button variant="ghost" size="sm" asChild className="hidden sm:inline-flex">
             <Link href="/discover">Обзор</Link>
           </Button>
           <Button variant="ghost" size="sm" asChild className="hidden sm:inline-flex">

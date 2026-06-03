@@ -1,4 +1,4 @@
-import { BookMarked, CalendarDays, FileText, Star, Flame } from 'lucide-react';
+import { BookMarked, CalendarDays, FileText, Star } from 'lucide-react';
 import { type ReadingStats, goalProgress } from '@/lib/stats';
 import { formatNumber, plural } from '@/lib/utils';
 
@@ -30,11 +30,6 @@ export function StatsDashboard({ stats }: StatsDashboardProps) {
       icon: Star,
       label: 'Средняя оценка',
       value: stats.avgRating ? stats.avgRating.toFixed(1) : '—',
-    },
-    {
-      icon: Flame,
-      label: 'Серия дней',
-      value: `${stats.currentStreak}`,
     },
   ];
 
@@ -71,7 +66,7 @@ export function StatsDashboard({ stats }: StatsDashboardProps) {
       </div>
 
       {/* Метрики */}
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         {cards.map(({ icon: Icon, label, value }) => (
           <div key={label} className="rounded-lg border border-border bg-card p-4">
             <Icon className="size-5 text-primary" aria-hidden="true" />

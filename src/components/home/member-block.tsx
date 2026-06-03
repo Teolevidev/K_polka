@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { Library, Target, Flame, ArrowRight, BookMarked } from 'lucide-react';
+import { Library, Target, ArrowRight, BookMarked, Star, Flame } from 'lucide-react';
 import { type ReadingStats, goalProgress } from '@/lib/stats';
 import { plural, formatNumber } from '@/lib/utils';
 
@@ -39,18 +39,18 @@ function MemberStats({ userName, stats }: { userName: string; stats: ReadingStat
       hint: stats.goalTarget ? `выполнено ${progress}%` : 'нажмите, чтобы задать',
     },
     {
-      href: '/profile',
-      icon: Flame,
-      label: 'Серия дней',
-      value: String(stats.currentStreak),
-      hint: stats.currentStreak ? 'так держать' : 'начните читать сегодня',
-    },
-    {
       href: '/library',
       icon: BookMarked,
       label: 'Прочитано',
       value: formatNumber(stats.totalRead),
       hint: `${plural(stats.totalRead, 'книга', 'книги', 'книг')} на полке`,
+    },
+    {
+      href: '/profile',
+      icon: Star,
+      label: 'Средняя оценка',
+      value: stats.avgRating ? stats.avgRating.toFixed(1) : '—',
+      hint: stats.avgRating ? 'из 10' : 'оцените прочитанное',
     },
   ];
 
