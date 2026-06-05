@@ -63,6 +63,41 @@ export async function toggleReaction(
   return { ok: true };
 }
 
+/** Батч: счётчики реакций для нескольких объектов одного типа. */
+export async function getReactionSummariesForTargets(
+  targetType: ReactionTargetType,
+  ids: string[],
+): Promise<Record<string, ReactionSummary>> {
+  const result: Record<string, ReactionSummary> = {};
+  if (ids.length === 0) return result;
+
+  const user = await getCurrentUser();
+  const supabase = await createSupabaseServerClient();
+  const { data } = await supabase
+    .from('reactions')
+    .select('target_id, kind, user_id')
+    .eq('target_type', targetType)
+    .in('target_id', ids);
+
+  const rows = (data ?? []) as {
+    target_id: string;
+    kind: ReactionKind;
+    user_id: string;
+  }[];
+
+  for (const id of ids) {
+    result[id] = { likes: 0, dislikes: 0, myKind: null };
+  }
+  for (const r of rows) {
+    const s = result[r.target_id];
+    if (!s) continue;
+    if (r.kind === 'like') s.likes += 1;
+    else s.dislikes += 1;
+    if (user && r.user_id === user.id) s.myKind = r.kind;
+  }
+  return result;
+}
+
 /** Загружает счётчики реакций + личную реакцию пользователя. */
 export async function getReactionSummary(
   targetType: ReactionTargetType,

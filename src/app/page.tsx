@@ -1,7 +1,10 @@
 import { HomeHero } from '@/components/home/home-hero';
 import { HomeMemberBlock } from '@/components/home/member-block';
 import { BookRow } from '@/components/home/book-row';
+import { QuoteCard } from '@/components/home/quote-card';
+import { RecommendationBlock } from '@/components/home/recommendation-block';
 import { PollWidget } from '@/components/polls/poll-widget';
+import { randomQuote } from '@/lib/quotes/data';
 import { showcaseSections } from '@/lib/books/showcase';
 import { isSupabaseConfigured } from '@/lib/supabase/env';
 import { getCurrentUser } from '@/lib/supabase/server';
@@ -53,6 +56,7 @@ export default async function HomePage() {
     ? await getPublishedArticles().catch(() => [])
     : [];
   const latestArticles = articles.slice(0, 3);
+  const quote = randomQuote();
 
   return (
     <div className="space-y-10 pb-8 pt-2">
@@ -61,6 +65,10 @@ export default async function HomePage() {
 
       {/* Персональный блок — максимально высоко, личные мотиваторы */}
       <HomeMemberBlock userName={userName} stats={stats} />
+
+      <QuoteCard quote={quote} />
+
+      <RecommendationBlock isSignedIn={Boolean(user)} />
 
       {poll && <PollWidget poll={poll} isSignedIn={Boolean(user)} />}
 

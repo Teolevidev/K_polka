@@ -13,6 +13,7 @@ import { findCatalogBookIdByRef } from '@/lib/books/catalog';
 import { getBookReviews, getMyReviewForBook } from '@/lib/reviews/queries';
 import { ReviewList } from '@/components/reviews/review-list';
 import { ReviewForm } from '@/components/reviews/review-form';
+import { getReactionSummariesForTargets } from '@/lib/reactions';
 
 interface BookPageProps {
   params: Promise<{ ref: string }>;
@@ -54,6 +55,12 @@ export default async function BookPage({ params }: BookPageProps) {
     : [];
   const myReview =
     user && catalogBookId ? await getMyReviewForBook(user.id, catalogBookId) : null;
+
+  // Реакции (лайк/дизлайк) под каждым отзывом
+  const reviewIds = reviews.map((r) => r.id);
+  const reactionSummaries = reviewIds.length
+    ? await getReactionSummariesForTargets('review', reviewIds)
+    : {};
 
   const meta: { label: string; value: string }[] = [];
   if (book.publishedDate) meta.push({ label: 'Год издания', value: book.publishedDate });
@@ -141,6 +148,9 @@ export default async function BookPage({ params }: BookPageProps) {
         <ReviewList
           reviews={reviews.filter((r) => !r.isMine)}
           emptyText="Будьте первым, кто оставит отзыв на эту книгу."
+          reactionSummaries={reactionSummaries}
+          isSignedIn={Boolean(user)}
+          signinHref={`/signin?next=/book/${ref}`}
         />
       </section>
     </div>

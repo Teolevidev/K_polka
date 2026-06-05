@@ -3,12 +3,20 @@ import { Star, EyeOff, Clock } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import type { ReviewWithAuthor } from '@/lib/reviews/queries';
+import { ReactionButtons } from '@/components/reactions/reaction-buttons';
+import type { ReactionSummary } from '@/lib/reactions';
 
 interface ReviewListProps {
   reviews: ReviewWithAuthor[];
   /** Заголовок, если выводим как самостоятельную секцию. */
   emptyText?: string;
   className?: string;
+  /** Сводки реакций по review.id для кнопок лайк/дизлайк. */
+  reactionSummaries?: Record<string, ReactionSummary>;
+  /** Вошёл ли пользователь — для поведения кнопок реакции. */
+  isSignedIn?: boolean;
+  /** Куда вести гостя на вход. */
+  signinHref?: string;
 }
 
 const DATE_FMT = new Intl.DateTimeFormat('ru-RU', {
@@ -22,6 +30,9 @@ export function ReviewList({
   reviews,
   emptyText = 'Отзывов пока нет',
   className,
+  reactionSummaries,
+  isSignedIn = false,
+  signinHref = '/signin',
 }: ReviewListProps) {
   if (reviews.length === 0) {
     return <p className="text-sm text-muted-foreground">{emptyText}</p>;
@@ -80,6 +91,20 @@ export function ReviewList({
             </details>
           ) : (
             <p className="whitespace-pre-line text-sm leading-relaxed">{r.body}</p>
+          )}
+
+          {reactionSummaries && (
+            <div className="mt-3">
+              <ReactionButtons
+                targetType="review"
+                targetId={r.id}
+                isSignedIn={isSignedIn}
+                initial={
+                  reactionSummaries[r.id] ?? { likes: 0, dislikes: 0, myKind: null }
+                }
+                signinHref={signinHref}
+              />
+            </div>
           )}
         </li>
       ))}
