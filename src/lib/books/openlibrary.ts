@@ -53,6 +53,23 @@ const LANG_MAP: Record<string, string> = {
   ita: 'it',
 };
 
+/**
+ * Максимум ISBN, запоминаемых на одно произведение. У классики изданий
+ * бывают сотни, а нам нужен лишь мост к изданиям Google Books.
+ */
+const MAX_EDITION_ISBNS = 80;
+
+/** Собирает валидные ISBN-13 всех изданий произведения. */
+function collectIsbn13s(list: string[] | undefined): string[] {
+  const out: string[] = [];
+  for (const raw of list ?? []) {
+    if (out.length >= MAX_EDITION_ISBNS) break;
+    const cleaned = cleanIsbn(raw);
+    if (isValidIsbn13(cleaned)) out.push(cleaned);
+  }
+  return out;
+}
+
 function pickIsbns(list: string[] | undefined): {
   isbn13: string | null;
   isbn10: string | null;
@@ -88,6 +105,8 @@ function normalizeDoc(doc: OpenLibraryDoc): NormalizedBook | null {
     genres: (doc.subject ?? []).slice(0, 8),
     mediaType: 'book',
     editionCount: doc.edition_count ?? 1,
+    workId: doc.key,
+    editionIsbns: collectIsbn13s(doc.isbn),
   };
 }
 

@@ -32,6 +32,18 @@ export interface NormalizedBook {
    * OpenLibrary возвращает в поле edition_count; Google Books — нет.
    */
   editionCount?: number;
+  /**
+   * Идентификатор произведения (work) в OpenLibrary, вида `/works/OL…W`.
+   * Объединяет все издания и переводы одной книги. Заполняет только
+   * OpenLibrary: у Google Books понятия work нет.
+   */
+  workId?: string | null;
+  /**
+   * ISBN изданий этого произведения — мост между work и изданиями
+   * Google Books, у которых своего work-идентификатора нет.
+   * Заполняет только OpenLibrary.
+   */
+  editionIsbns?: string[];
 }
 
 export interface SearchResultBook extends NormalizedBook {

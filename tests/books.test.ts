@@ -7,7 +7,13 @@ import {
   detectScript,
   preferredLanguage,
 } from '@/lib/books/normalize';
-import { scoreBook, compareResults } from '@/lib/books/search';
+import {
+  scoreBook,
+  compareResults,
+  dedupeKey,
+  mergeBooks,
+  buildWorkIndex,
+} from '@/lib/books/search';
 import type { NormalizedBook, SearchResultBook } from '@/lib/books/types';
 import {
   isValidIsbn10,
@@ -193,6 +199,83 @@ describe('compareResults — порядок выдачи', () => {
 
     const sorted = [weak, relevant].sort(compareResults('ru'));
     expect(sorted[0].title).toBe('Лавр');
+  });
+});
+
+describe('схлопывание переводов через work OpenLibrary', () => {
+  // OpenLibrary отдаёт произведение и ISBN его изданий — в том числе
+  // переводов. Google Books отдаёт отдельные издания без work.
+  const olWork = book({
+    source: 'openlibrary',
+    sourceId: '/works/OL123W',
+    workId: '/works/OL123W',
+    title: 'Лавр',
+    authors: ['Евгений Водолазкин'],
+    language: 'ru',
+    editionIsbns: ['9785171234567', '9781234567897'],
+    editionCount: 12,
+  });
+
+  const googleRu = book({
+    source: 'google',
+    sourceId: 'g-ru',
+    title: 'Лавр',
+    authors: ['Евгений Водолазкин'],
+    language: 'ru',
+    isbn13: '9785171234567',
+  });
+
+  const googleEn = book({
+    source: 'google',
+    sourceId: 'g-en',
+    title: 'Laurus',
+    authors: ['Eugene Vodolazkin'],
+    language: 'en',
+    isbn13: '9781234567897',
+  });
+
+  it('индекс связывает ISBN изданий с произведением', () => {
+    const index = buildWorkIndex([olWork, googleRu, googleEn]);
+    expect(index.get('9785171234567')).toBe('/works/OL123W');
+    expect(index.get('9781234567897')).toBe('/works/OL123W');
+  });
+
+  it('русское и английское издания попадают в одну группу', () => {
+    const index = buildWorkIndex([olWork, googleRu, googleEn]);
+    expect(dedupeKey(googleRu, index)).toBe(dedupeKey(googleEn, index));
+    expect(dedupeKey(olWork, index)).toBe(dedupeKey(googleEn, index));
+  });
+
+  it('без индекса перевод остаётся отдельной карточкой', () => {
+    // Так вело себя до правки: разные названия → разные ключи.
+    expect(dedupeKey(googleRu)).not.toBe(dedupeKey(googleEn));
+  });
+
+  it('издание с неизвестным ISBN не приклеивается к чужому произведению', () => {
+    const index = buildWorkIndex([olWork]);
+    const foreign = book({
+      title: 'Совсем другая книга',
+      authors: ['Кто-то'],
+      isbn13: '9789999999999',
+    });
+    expect(dedupeKey(foreign, index)).not.toBe(dedupeKey(olWork, index));
+  });
+
+  it('при склейке карточка показывает русское название, а не перевод', () => {
+    const merged = mergeBooks(googleEn, googleRu, 'ru');
+    expect(merged.title).toBe('Лавр');
+    expect(merged.language).toBe('ru');
+  });
+
+  it('без языка запроса название берётся у первого издания', () => {
+    const merged = mergeBooks(googleEn, googleRu, null);
+    expect(merged.title).toBe('Laurus');
+  });
+
+  it('склейка сохраняет наибольшее число изданий и work', () => {
+    const merged = mergeBooks(googleRu, olWork, 'ru');
+    expect(merged.editionCount).toBe(12);
+    expect(merged.workId).toBe('/works/OL123W');
   });
 });
 
