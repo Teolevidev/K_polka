@@ -65,19 +65,29 @@ function normalizeVolume(volume: GoogleVolume): NormalizedBook | null {
 /**
  * Ищет книги в Google Books.
  * @param query   свободный текст или ISBN
- * @param options isbn — поиск строго по ISBN; signal — для тайм-аута
+ * @param options isbn — поиск строго по ISBN; signal — для тайм-аута;
+ *                lang — код языка для langRestrict
  */
 export async function searchGoogleBooks(
   query: string,
-  options: { isbn?: boolean; signal?: AbortSignal; limit?: number } = {},
+  options: {
+    isbn?: boolean;
+    signal?: AbortSignal;
+    limit?: number;
+    lang?: string | null;
+  } = {},
 ): Promise<NormalizedBook[]> {
-  const { isbn = false, signal, limit = 20 } = options;
+  const { isbn = false, signal, limit = 20, lang = null } = options;
   const q = isbn ? `isbn:${cleanIsbn(query)}` : query;
 
   const url = new URL(ENDPOINT);
   url.searchParams.set('q', q);
   url.searchParams.set('maxResults', String(Math.min(limit, 40)));
   url.searchParams.set('printType', 'books');
+  // Поиск по ISBN однозначен — язык там только мешает.
+  if (lang && !isbn) {
+    url.searchParams.set('langRestrict', lang);
+  }
   if (process.env.GOOGLE_BOOKS_API_KEY) {
     url.searchParams.set('key', process.env.GOOGLE_BOOKS_API_KEY);
   }

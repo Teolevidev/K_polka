@@ -35,6 +35,34 @@ export function normalizeText(input: string): string {
     .trim();
 }
 
+/** Доминирующий алфавит строки. */
+export type Script = 'cyrillic' | 'latin' | 'other';
+
+/**
+ * Определяет, каким алфавитом набрана строка.
+ * Считаем буквы каждого алфавита и берём тот, которого больше.
+ */
+export function detectScript(input: string): Script {
+  const cyrillic = input.match(/\p{Script=Cyrillic}/gu)?.length ?? 0;
+  const latin = input.match(/\p{Script=Latin}/gu)?.length ?? 0;
+  if (cyrillic === 0 && latin === 0) return 'other';
+  return cyrillic >= latin ? 'cyrillic' : 'latin';
+}
+
+/**
+ * Язык, который стоит предпочесть в выдаче для этого запроса.
+ *
+ * Кириллический запрос — почти наверняка поиск русского издания:
+ * человек, набравший «Лавр Водолазкин», не хочет получить перевод
+ * «Laurus» первым результатом.
+ *
+ * Для латиницы язык намеренно не навязываем: запрос может быть и к
+ * оригиналу на английском, и транслитерацией русского названия.
+ */
+export function preferredLanguage(query: string): string | null {
+  return detectScript(query) === 'cyrillic' ? 'ru' : null;
+}
+
 /** Разбивает нормализованный текст на токены-слова. */
 export function tokenize(input: string): string[] {
   const normalized = normalizeText(input);

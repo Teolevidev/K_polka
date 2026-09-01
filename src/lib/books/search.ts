@@ -5,7 +5,7 @@ import type {
   BookSearchResponse,
 } from './types';
 import { detectQueryKind } from './isbn';
-import { normalizeText, fuzzyScore } from './normalize';
+import { normalizeText, fuzzyScore, preferredLanguage } from './normalize';
 import { searchGoogleBooks } from './google';
 import { searchOpenLibrary } from './openlibrary';
 
@@ -72,14 +72,26 @@ async function runSource(
   }
 }
 
+/** Бонус за совпадение языка издания с языком запроса. */
+const LANG_BONUS = 0.15;
+/** Штраф изданию на другом языке, когда язык запроса понятен. */
+const LANG_PENALTY = 0.1;
+
 /**
  * Скор книги. Учитывает:
  *  - совпадение названия (fuzzy),
  *  - точное совпадение названия → большой бонус,
  *  - совпадение автора,
- *  - штраф за «мусор» в названии.
+ *  - штраф за «мусор» в названии,
+ *  - совпадение языка издания с языком запроса.
+ *
+ * @param preferredLang код языка, ожидаемого в выдаче, либо null
  */
-function scoreBook(book: NormalizedBook, query: string): number {
+export function scoreBook(
+  book: NormalizedBook,
+  query: string,
+  preferredLang: string | null = null,
+): number {
   const nq = normalizeText(query);
   const nt = normalizeText(book.title);
 
@@ -101,7 +113,49 @@ function scoreBook(book: NormalizedBook, query: string): number {
   if (NOISE_PATTERN.test(book.title)) {
     score = Math.max(0, score - 0.3);
   }
+
+  // Язык. Без этого русское и английское издание одной книги получают
+  // одинаковый балл, и наверх всплывает то, у которого больше изданий, —
+  // почти всегда англоязычное.
+  if (preferredLang && book.language) {
+    score =
+      book.language === preferredLang
+        ? Math.min(1, score + LANG_BONUS)
+        : Math.max(0, score - LANG_PENALTY);
+  }
+
   return Number(score.toFixed(4));
+}
+
+/**
+ * Компаратор результатов выдачи.
+ *
+ * Порядок сравнения: релевантность → совпадение языка → число изданий →
+ * число подтвердивших источников → наличие обложки.
+ *
+ * Язык стоит выше числа изданий сознательно: у оригинала изданий почти
+ * всегда больше, чем у перевода, поэтому иначе английская запись
+ * выигрывает у русской при равной релевантности.
+ */
+export function compareResults(preferredLang: string | null = null) {
+  return (a: SearchResultBook, b: SearchResultBook): number => {
+    if (b.score !== a.score) return b.score - a.score;
+
+    if (preferredLang) {
+      const langDelta =
+        (b.language === preferredLang ? 1 : 0) -
+        (a.language === preferredLang ? 1 : 0);
+      if (langDelta !== 0) return langDelta;
+    }
+
+    const editionDelta = (b.editionCount ?? 1) - (a.editionCount ?? 1);
+    if (editionDelta !== 0) return editionDelta;
+
+    if (b.sources.length !== a.sources.length) {
+      return b.sources.length - a.sources.length;
+    }
+    return (b.coverUrl ? 1 : 0) - (a.coverUrl ? 1 : 0);
+  };
 }
 
 export async function searchBooks(rawQuery: string): Promise<BookSearchResponse> {
@@ -112,10 +166,14 @@ export async function searchBooks(rawQuery: string): Promise<BookSearchResponse>
 
   const kind = detectQueryKind(query);
   const isbn = kind === 'isbn';
+  const preferredLang = isbn ? null : preferredLanguage(query);
 
+  // Google ограничиваем языком запроса, OpenLibrary — намеренно нет:
+  // так у нас остаётся охват на случай, когда русского издания просто
+  // не существует и книга есть только в оригинале.
   const sourceResults = await Promise.all([
     runSource('google', (signal) =>
-      searchGoogleBooks(query, { isbn, signal, limit: 30 }),
+      searchGoogleBooks(query, { isbn, signal, limit: 30, lang: preferredLang }),
     ),
     runSource('openlibrary', (signal) =>
       searchOpenLibrary(query, { isbn, signal, limit: 30 }),
@@ -146,21 +204,12 @@ export async function searchBooks(rawQuery: string): Promise<BookSearchResponse>
   const scored: SearchResultBook[] = Array.from(merged.values())
     .map(({ book, sources }) => ({
       ...book,
-      score: isbn ? 1 : scoreBook(book, query),
+      score: isbn ? 1 : scoreBook(book, query, preferredLang),
       sources: Array.from(sources),
     }))
     .filter((b) => isbn || b.score >= 0.25);
 
-  // Сортировка: score → editionCount → sourceCount → есть обложка
-  scored.sort((a, b) => {
-    if (b.score !== a.score) return b.score - a.score;
-    const editionDelta = (b.editionCount ?? 1) - (a.editionCount ?? 1);
-    if (editionDelta !== 0) return editionDelta;
-    if (b.sources.length !== a.sources.length) {
-      return b.sources.length - a.sources.length;
-    }
-    return (b.coverUrl ? 1 : 0) - (a.coverUrl ? 1 : 0);
-  });
+  scored.sort(compareResults(preferredLang));
 
   return {
     query,

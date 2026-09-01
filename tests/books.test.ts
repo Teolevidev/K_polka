@@ -4,7 +4,11 @@ import {
   levenshtein,
   similarity,
   fuzzyScore,
+  detectScript,
+  preferredLanguage,
 } from '@/lib/books/normalize';
+import { scoreBook, compareResults } from '@/lib/books/search';
+import type { NormalizedBook, SearchResultBook } from '@/lib/books/types';
 import {
   isValidIsbn10,
   isValidIsbn13,
@@ -98,6 +102,97 @@ describe('ISBN', () => {
   it('определяет вид запроса', () => {
     expect(detectQueryKind('9780306406157')).toBe('isbn');
     expect(detectQueryKind('Толстой')).toBe('free-text');
+  });
+});
+
+describe('detectScript / preferredLanguage', () => {
+  it('кириллический запрос → русский язык выдачи', () => {
+    expect(detectScript('Лавр Водолазкин')).toBe('cyrillic');
+    expect(preferredLanguage('Лавр Водолазкин')).toBe('ru');
+  });
+
+  it('латинский запрос → язык не навязываем', () => {
+    expect(detectScript('Laurus Vodolazkin')).toBe('latin');
+    expect(preferredLanguage('Laurus Vodolazkin')).toBeNull();
+  });
+
+  it('строка без букв → other', () => {
+    expect(detectScript('12345 ---')).toBe('other');
+    expect(preferredLanguage('12345 ---')).toBeNull();
+  });
+});
+
+/** Заготовка книги: переопределяем только то, что важно для теста. */
+function book(patch: Partial<NormalizedBook>): NormalizedBook {
+  return {
+    source: 'google',
+    sourceId: 'x',
+    isbn13: null,
+    isbn10: null,
+    title: '',
+    subtitle: null,
+    authors: [],
+    description: null,
+    coverUrl: null,
+    pageCount: null,
+    publishedDate: null,
+    language: null,
+    genres: [],
+    mediaType: 'book',
+    ...patch,
+  };
+}
+
+function result(patch: Partial<SearchResultBook>): SearchResultBook {
+  return { ...book({}), score: 0.5, sources: ['google'], ...patch };
+}
+
+describe('scoreBook — язык выдачи', () => {
+  const ru = book({ title: 'Лавр', authors: ['Евгений Водолазкин'], language: 'ru' });
+  const en = book({ title: 'Лавр', authors: ['Евгений Водолазкин'], language: 'en' });
+
+  it('русское издание получает больше английского на русский запрос', () => {
+    const query = 'Лавр Водолазкин';
+    expect(scoreBook(ru, query, 'ru')).toBeGreaterThan(scoreBook(en, query, 'ru'));
+  });
+
+  it('без языка запроса издания неразличимы', () => {
+    const query = 'Лавр Водолазкин';
+    expect(scoreBook(ru, query, null)).toBe(scoreBook(en, query, null));
+  });
+
+  it('книга без указанного языка не штрафуется', () => {
+    const query = 'Лавр';
+    const unknown = book({ title: 'Лавр', language: null });
+    expect(scoreBook(unknown, query, 'ru')).toBe(scoreBook(unknown, query, null));
+  });
+});
+
+describe('compareResults — порядок выдачи', () => {
+  it('русское издание обгоняет английское, даже если у того больше изданий', () => {
+    // Ровно та жалоба: у оригинала изданий всегда больше, и раньше
+    // он выигрывал тайбрейкер у русского перевода.
+    const russian = result({ title: 'Лавр', language: 'ru', editionCount: 2, score: 0.9 });
+    const english = result({ title: 'Laurus', language: 'en', editionCount: 40, score: 0.9 });
+
+    const sorted = [english, russian].sort(compareResults('ru'));
+    expect(sorted[0].title).toBe('Лавр');
+  });
+
+  it('без языка запроса тайбрейкер остаётся по числу изданий', () => {
+    const few = result({ title: 'A', language: 'en', editionCount: 2, score: 0.9 });
+    const many = result({ title: 'B', language: 'en', editionCount: 40, score: 0.9 });
+
+    const sorted = [few, many].sort(compareResults(null));
+    expect(sorted[0].title).toBe('B');
+  });
+
+  it('релевантность всё равно важнее языка', () => {
+    const relevant = result({ title: 'Лавр', language: 'en', score: 0.95 });
+    const weak = result({ title: 'Что-то другое', language: 'ru', score: 0.4 });
+
+    const sorted = [weak, relevant].sort(compareResults('ru'));
+    expect(sorted[0].title).toBe('Лавр');
   });
 });
 
