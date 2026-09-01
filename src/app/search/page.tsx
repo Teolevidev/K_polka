@@ -12,17 +12,25 @@ import { plural } from '@/lib/utils';
 export const metadata: Metadata = { title: 'Поиск книг' };
 
 interface SearchPageProps {
-  searchParams: Promise<{ q?: string }>;
+  searchParams: Promise<{ q?: string; all?: string }>;
 }
 
 export default async function SearchPage({ searchParams }: SearchPageProps) {
-  const { q = '' } = await searchParams;
+  const { q = '', all } = await searchParams;
   const query = q.trim();
   const hasQuery = query.length >= 2;
+  const allScripts = all === '1';
 
   const data = hasQuery
-    ? await searchBooks(query)
-    : { query, results: [], respondedSources: [], failedSources: [] };
+    ? await searchBooks(query, { allScripts })
+    : {
+        query,
+        results: [],
+        respondedSources: [],
+        failedSources: [],
+        filteredByScript: false,
+        hiddenByScript: 0,
+      };
 
   const kind = detectQueryKind(query);
 
@@ -76,6 +84,31 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
               href: `/book/${encodeBookRef(book.source, book.sourceId)}`,
             }))}
           />
+
+          {data.filteredByScript && data.hiddenByScript > 0 && (
+            <p className="text-xs text-muted-foreground">
+              Показаны книги с русскими названиями.{' '}
+              <Link
+                href={`/search?q=${encodeURIComponent(query)}&all=1`}
+                className="underline underline-offset-4 hover:text-foreground"
+              >
+                Показать все {data.hiddenByScript} скрытых
+              </Link>{' '}
+              — переводы и записи в латинской транслитерации.
+            </p>
+          )}
+
+          {allScripts && (
+            <p className="text-xs text-muted-foreground">
+              Показаны книги на всех языках.{' '}
+              <Link
+                href={`/search?q=${encodeURIComponent(query)}`}
+                className="underline underline-offset-4 hover:text-foreground"
+              >
+                Только с русскими названиями
+              </Link>
+            </p>
+          )}
 
           {data.failedSources.length > 0 && (
             <p className="text-xs text-muted-foreground">

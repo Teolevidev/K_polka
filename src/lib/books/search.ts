@@ -288,10 +288,28 @@ export function compareResults(preferredLang: string | null = null, query = '') 
   };
 }
 
-export async function searchBooks(rawQuery: string): Promise<BookSearchResponse> {
+export interface SearchOptions {
+  /**
+   * Показать результаты на всех алфавитах. По умолчанию русский запрос
+   * отдаёт только русские названия — это выбор человека, а не источника.
+   */
+  allScripts?: boolean;
+}
+
+export async function searchBooks(
+  rawQuery: string,
+  options: SearchOptions = {},
+): Promise<BookSearchResponse> {
   const query = rawQuery.trim();
   if (query.length < 2) {
-    return { query, results: [], respondedSources: [], failedSources: [] };
+    return {
+      query,
+      results: [],
+      respondedSources: [],
+      failedSources: [],
+      filteredByScript: false,
+      hiddenByScript: 0,
+    };
   }
 
   const kind = detectQueryKind(query);
@@ -343,10 +361,25 @@ export async function searchBooks(rawQuery: string): Promise<BookSearchResponse>
 
   scored.sort(compareResults(preferredLang, isbn ? '' : query));
 
+  // Фильтр по алфавиту: по русскому запросу показываем русские названия,
+  // без транслитераций вроде «Pikovaia dama» и переводов.
+  //
+  // С обязательной страховкой: если после фильтра не осталось ничего,
+  // показываем всё. Пустая выдача хуже неидеальной — на langRestrict мы
+  // этот урок уже получили.
+  const wantsScriptFilter = !options.allScripts && !isbn && preferredLang !== null;
+  const onScript = wantsScriptFilter
+    ? scored.filter((b) => titleMatchesQueryScript(b, query))
+    : scored;
+  const filteredByScript = wantsScriptFilter && onScript.length > 0;
+  const visible = filteredByScript ? onScript : scored;
+
   return {
     query,
-    results: scored.slice(0, 50),
+    results: visible.slice(0, 50),
     respondedSources,
     failedSources,
+    filteredByScript,
+    hiddenByScript: filteredByScript ? scored.length - onScript.length : 0,
   };
 }

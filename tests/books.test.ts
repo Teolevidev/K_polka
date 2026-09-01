@@ -422,6 +422,40 @@ describe('внешние оценки', () => {
   });
 });
 
+describe('фильтр выдачи по алфавиту', () => {
+  // Проверяем саму логику отбора: русский запрос показывает русские
+  // названия, но никогда не оставляет человека с пустым экраном.
+  function filter(books: SearchResultBook[], query: string) {
+    const onScript = books.filter((b) => titleMatchesQueryScript(b, query));
+    const filtered = onScript.length > 0;
+    return {
+      results: filtered ? onScript : books,
+      filteredByScript: filtered,
+      hiddenByScript: filtered ? books.length - onScript.length : 0,
+    };
+  }
+
+  const cyrillic = result({ title: 'Пиковая дама' });
+  const romanized = result({ title: 'Pikovaia dama' });
+  const translated = result({ title: 'The Queen of Spades' });
+
+  it('русский запрос оставляет только русские названия', () => {
+    const out = filter([cyrillic, romanized, translated], 'Пушкин');
+    expect(out.results.map((b) => b.title)).toEqual(['Пиковая дама']);
+    expect(out.filteredByScript).toBe(true);
+    expect(out.hiddenByScript).toBe(2);
+  });
+
+  it('если русских названий нет вовсе, показываем всё', () => {
+    // Страховка от повторения истории с langRestrict: пустая выдача
+    // хуже неидеальной.
+    const out = filter([romanized, translated], 'Пушкин');
+    expect(out.results).toHaveLength(2);
+    expect(out.filteredByScript).toBe(false);
+    expect(out.hiddenByScript).toBe(0);
+  });
+});
+
 describe('отказ источника против отсутствия книги', () => {
   it('404 и 410 означают, что книги действительно нет', () => {
     expect(isTransientStatus(404)).toBe(false);
