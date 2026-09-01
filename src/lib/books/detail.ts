@@ -7,6 +7,34 @@ import { cleanIsbn } from './isbn';
  * Поддерживает Google Books (полные данные) и OpenLibrary (work + авторы).
  */
 
+/**
+ * Источник не смог ответить: исчерпана квота, сбой на их стороне,
+ * сеть не дошла.
+ *
+ * Отличать это от «книги нет» важно: раньше любая такая осечка
+ * превращалась в страницу «Книга не найдена», хотя книга существует и
+ * ссылка верная. Человек видел «ссылка устарела» и не понимал, почему
+ * поиск книгу показывает, а открыть её нельзя.
+ */
+export class SourceUnavailableError extends Error {
+  constructor(
+    readonly source: string,
+    readonly status: number,
+  ) {
+    super(`Источник ${source} ответил ${status}`);
+    this.name = 'SourceUnavailableError';
+  }
+}
+
+/**
+ * Ответ говорит о временной беде источника, а не об отсутствии книги.
+ * 404 и 410 — книги действительно нет. Остальное (429 — квота,
+ * 5xx — сбой, 403 — доступ) заслуживает честного сообщения.
+ */
+export function isTransientStatus(status: number): boolean {
+  return status !== 404 && status !== 410;
+}
+
 interface GoogleVolumeFull {
   id: string;
   volumeInfo?: {
@@ -29,7 +57,12 @@ async function getGoogleBook(id: string): Promise<NormalizedBook | null> {
     url.searchParams.set('key', process.env.GOOGLE_BOOKS_API_KEY);
   }
   const res = await fetch(url, { next: { revalidate: 86400 } });
-  if (!res.ok) return null;
+  if (!res.ok) {
+    if (isTransientStatus(res.status)) {
+      throw new SourceUnavailableError('Google Books', res.status);
+    }
+    return null;
+  }
 
   const v = (await res.json()) as GoogleVolumeFull;
   const info = v.volumeInfo;
@@ -78,7 +111,12 @@ async function getOpenLibraryBook(key: string): Promise<NormalizedBook | null> {
     headers: { 'User-Agent': 'KnizhnayaPolka/0.1 (book tracker)' },
     next: { revalidate: 86400 },
   });
-  if (!res.ok) return null;
+  if (!res.ok) {
+    if (isTransientStatus(res.status)) {
+      throw new SourceUnavailableError('OpenLibrary', res.status);
+    }
+    return null;
+  }
 
   const work = (await res.json()) as OpenLibraryWork;
   if (!work.title) return null;
@@ -129,7 +167,13 @@ async function getOpenLibraryBook(key: string): Promise<NormalizedBook | null> {
   };
 }
 
-/** Получает книгу по ссылке источника. */
+/**
+ * Получает книгу по ссылке источника.
+ *
+ * Бросает SourceUnavailableError, если источник не ответил: вызывающая
+ * сторона должна показать «источник недоступен», а не «книга не найдена».
+ * Возвращает null только когда книги действительно нет.
+ */
 export async function getBookByRef(ref: BookRef): Promise<NormalizedBook | null> {
   try {
     switch (ref.source) {
@@ -140,7 +184,9 @@ export async function getBookByRef(ref: BookRef): Promise<NormalizedBook | null>
       default:
         return null;
     }
-  } catch {
-    return null;
+  } catch (error) {
+    if (error instanceof SourceUnavailableError) throw error;
+    // Сеть не дошла или ответ не разобрался — это тоже не «книги нет».
+    throw new SourceUnavailableError(ref.source, 0);
   }
 }

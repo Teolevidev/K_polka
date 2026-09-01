@@ -1,7 +1,9 @@
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { decodeBookRef } from '@/lib/books/ref';
-import { getBookByRef } from '@/lib/books/detail';
+import { getBookByRef, SourceUnavailableError } from '@/lib/books/detail';
+import type { NormalizedBook } from '@/lib/books/types';
+import { SourceUnavailableNotice } from '@/components/book/source-unavailable-notice';
 import { BookCover } from '@/components/book/book-cover';
 import { AddToShelf } from '@/components/book/add-to-shelf';
 import { Badge } from '@/components/ui/badge';
@@ -19,18 +21,38 @@ interface BookPageProps {
   params: Promise<{ ref: string }>;
 }
 
-async function loadBook(ref: string) {
+type LoadResult =
+  | { status: 'ok'; book: NormalizedBook }
+  | { status: 'not-found' }
+  | { status: 'source-unavailable'; source: string };
+
+/**
+ * Загружает книгу, различая три исхода: нашли, книги нет, источник
+ * не ответил. Третий случай раньше сливался со вторым, и человек видел
+ * «ссылка устарела» там, где просто отказал внешний API.
+ */
+async function loadBook(ref: string): Promise<LoadResult> {
   const decoded = decodeBookRef(ref);
-  if (!decoded) return null;
-  return getBookByRef(decoded);
+  if (!decoded) return { status: 'not-found' };
+
+  try {
+    const book = await getBookByRef(decoded);
+    return book ? { status: 'ok', book } : { status: 'not-found' };
+  } catch (error) {
+    if (error instanceof SourceUnavailableError) {
+      return { status: 'source-unavailable', source: error.source };
+    }
+    throw error;
+  }
 }
 
 export async function generateMetadata({
   params,
 }: BookPageProps): Promise<Metadata> {
   const { ref } = await params;
-  const book = await loadBook(ref);
-  if (!book) return { title: 'Книга не найдена' };
+  const loaded = await loadBook(ref);
+  if (loaded.status !== 'ok') return { title: 'Книга не найдена' };
+  const { book } = loaded;
   return {
     title: book.title,
     description: book.description?.slice(0, 160) ?? `${book.title} — на Книжной полке`,
@@ -39,8 +61,15 @@ export async function generateMetadata({
 
 export default async function BookPage({ params }: BookPageProps) {
   const { ref } = await params;
-  const book = await loadBook(ref);
-  if (!book) notFound();
+  const loaded = await loadBook(ref);
+
+  // Источник не ответил — книга существует, просто мы её сейчас не достали.
+  if (loaded.status === 'source-unavailable') {
+    return <SourceUnavailableNotice source={loaded.source} />;
+  }
+  if (loaded.status === 'not-found') notFound();
+
+  const { book } = loaded;
 
   const user = isSupabaseConfigured() ? await getCurrentUser() : null;
   const shelfStatus = user ? await getShelfStatusByRef(user.id, ref) : null;

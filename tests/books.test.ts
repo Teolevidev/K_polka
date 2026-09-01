@@ -26,6 +26,7 @@ import {
   detectQueryKind,
 } from '@/lib/books/isbn';
 import { encodeBookRef, decodeBookRef } from '@/lib/books/ref';
+import { isTransientStatus, SourceUnavailableError } from '@/lib/books/detail';
 
 describe('normalizeText', () => {
   it('приводит регистр и ё→е', () => {
@@ -418,6 +419,28 @@ describe('внешние оценки', () => {
     const b = book({ title: 'Лавр' });
 
     expect(mergeBooks(a, b).externalRating).toBeNull();
+  });
+});
+
+describe('отказ источника против отсутствия книги', () => {
+  it('404 и 410 означают, что книги действительно нет', () => {
+    expect(isTransientStatus(404)).toBe(false);
+    expect(isTransientStatus(410)).toBe(false);
+  });
+
+  it('исчерпанная квота и сбои — это отказ источника, а не отсутствие книги', () => {
+    // Ровно этот случай выдавал «Страница не найдена» на живую книгу.
+    expect(isTransientStatus(429)).toBe(true);
+    expect(isTransientStatus(500)).toBe(true);
+    expect(isTransientStatus(503)).toBe(true);
+    expect(isTransientStatus(403)).toBe(true);
+  });
+
+  it('ошибка несёт имя источника и код ответа', () => {
+    const error = new SourceUnavailableError('Google Books', 429);
+    expect(error.source).toBe('Google Books');
+    expect(error.status).toBe(429);
+    expect(error).toBeInstanceOf(Error);
   });
 });
 
