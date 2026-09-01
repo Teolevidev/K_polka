@@ -23,7 +23,8 @@ import { searchOpenLibrary } from './openlibrary';
  *     разные ISBN одной книги схлопываются в одну карточку.
  *  3. Скорим: точное совпадение названия → большой бонус, «мусор»
  *     (sparknotes, summary, notes, study guide…) → штраф.
- *  4. Сортируем: score → число изданий (edition_count) → число источников.
+ *  4. Сортируем: score → книги искомого автора → алфавит названия →
+ *     число изданий → число источников.
  */
 
 const SOURCE_TIMEOUT_MS = 12_000;
@@ -156,6 +157,21 @@ const LANG_BONUS = 0.15;
  */
 const TITLE_SCRIPT_BONUS = 0.1;
 
+/** Порог, с которого считаем, что запрос — это имя автора книги. */
+const AUTHOR_MATCH_THRESHOLD = 0.9;
+
+/**
+ * Книга написана тем, кого ищут.
+ *
+ * Отличает книги Пушкина от книг о Пушкине: по запросу «Пушкин» биография,
+ * названная его фамилией, получает идеальное совпадение по названию и
+ * обгоняет собрание сочинений. Обычно человек ищет книги автора, а не
+ * книги про него, поэтому такие результаты идут выше.
+ */
+export function isByQueriedAuthor(book: NormalizedBook, query: string): boolean {
+  return book.authors.some((a) => fuzzyScore(query, a) >= AUTHOR_MATCH_THRESHOLD);
+}
+
 /** Название набрано тем же алфавитом, что и запрос. */
 export function titleMatchesQueryScript(book: NormalizedBook, query: string): boolean {
   const queryScript = detectScript(query);
@@ -187,7 +203,10 @@ export function scoreBook(
     ? Math.max(...book.authors.map((a) => fuzzyScore(query, a)))
     : 0;
 
-  let score = Math.max(titleScore, authorScore * 0.85);
+  // Совпадение по автору раньше было ослаблено множителем 0.85, из-за
+  // чего книга, названная фамилией автора, обгоняла его собственные книги.
+  // Сигналы равноправны, а что важнее при равном балле — решает компаратор.
+  let score = Math.max(titleScore, authorScore);
 
   if (nt === nq && nq.length >= 2) {
     // точное совпадение названия — почти гарантированный топ
@@ -221,12 +240,15 @@ export function scoreBook(
 /**
  * Компаратор результатов выдачи.
  *
- * Порядок сравнения: релевантность → совпадение языка → число изданий →
- * число подтвердивших источников → наличие обложки.
+ * Порядок сравнения: релевантность → совпадение языка → книги искомого
+ * автора → алфавит названия → число изданий → число подтвердивших
+ * источников → наличие обложки.
  *
- * Язык стоит выше числа изданий сознательно: у оригинала изданий почти
- * всегда больше, чем у перевода, поэтому иначе английская запись
- * выигрывает у русской при равной релевантности.
+ * Тайбрейкеры несут основную работу: при поиске по фамилии у всех книг
+ * автора балл почти одинаковый, и порядок целиком определяется здесь.
+ * Число изданий намеренно стоит последним из содержательных признаков —
+ * оно велико у оригиналов и у записей библиотечных каталогов, и раньше
+ * из-за него наверх попадали переводы и транслитерации.
  */
 export function compareResults(preferredLang: string | null = null, query = '') {
   return (a: SearchResultBook, b: SearchResultBook): number => {
@@ -237,6 +259,14 @@ export function compareResults(preferredLang: string | null = null, query = '') 
         (b.language === preferredLang ? 1 : 0) -
         (a.language === preferredLang ? 1 : 0);
       if (langDelta !== 0) return langDelta;
+    }
+
+    // Книги искомого автора важнее книг о нём: по запросу «Пушкин»
+    // сначала Пушкин, потом биографии Пушкина.
+    if (query) {
+      const authorDelta =
+        (isByQueriedAuthor(b, query) ? 1 : 0) - (isByQueriedAuthor(a, query) ? 1 : 0);
+      if (authorDelta !== 0) return authorDelta;
     }
 
     // Алфавит названия важнее числа изданий: у романизованных записей

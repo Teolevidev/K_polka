@@ -12,6 +12,7 @@ import {
   scoreBook,
   compareResults,
   titleMatchesQueryScript,
+  isByQueriedAuthor,
   dedupeKey,
   mergeBooks,
   buildWorkIndex,
@@ -313,8 +314,10 @@ describe('алфавит названия против транслитерац�
   const romanized = { title: 'Pikovaia dama', authors: ['Александр Сергеевич Пушкин'] };
 
   it('кириллическое название получает больше транслитерированного', () => {
-    expect(scoreBook(book(cyrillic), 'Пушкин', 'ru')).toBeGreaterThan(
-      scoreBook(book(romanized), 'Пушкин', 'ru'),
+    // Без автора, чтобы балл не упирался в потолок: у книг самого Пушкина
+    // совпадение по автору идеальное, и разницу видно только в компараторе.
+    expect(scoreBook(book({ title: 'Пиковая дама' }), 'Пиковая', 'ru')).toBeGreaterThan(
+      scoreBook(book({ title: 'Pikovaia dama' }), 'Пиковая', 'ru'),
     );
   });
 
@@ -334,6 +337,63 @@ describe('алфавит названия против транслитерац�
 
     const sorted = [ru, en].sort(compareResults(null, 'Pushkin'));
     expect(sorted[0].title).toBe('The Queen of Spades');
+  });
+});
+
+describe('книги автора против книг о нём', () => {
+  // Случай со скриншота: по запросу «Пушкин» первыми шли биографии,
+  // потому что их название совпадает с запросом идеально, а совпадение
+  // по автору было ослаблено множителем.
+  const pushkin = 'Александр Сергеевич Пушкин';
+
+  it('книга автора распознаётся по фамилии в запросе', () => {
+    expect(isByQueriedAuthor(book({ authors: [pushkin] }), 'Пушкин')).toBe(true);
+    expect(isByQueriedAuthor(book({ authors: ['Л. М. Аринштейн'] }), 'Пушкин')).toBe(false);
+  });
+
+  it('книга без автора не считается написанной искомым автором', () => {
+    expect(isByQueriedAuthor(book({ authors: [] }), 'Пушкин')).toBe(false);
+  });
+
+  it('совпадение по автору больше не ослаблено относительно названия', () => {
+    // Раньше множитель 0.85 гарантированно ставил книгу автора ниже.
+    const byAuthor = book({ title: 'Сказки', authors: [pushkin] });
+    const aboutHim = book({ title: 'Пушкин', authors: ['Л. М. Аринштейн'] });
+
+    expect(scoreBook(byAuthor, 'Пушкин')).toBeGreaterThanOrEqual(
+      scoreBook(aboutHim, 'Пушкин') - 0.001,
+    );
+  });
+
+  it('в выдаче книга автора идёт выше биографии о нём', () => {
+    const skazki = result({ title: 'Сказки', authors: [pushkin], language: 'ru', score: 1 });
+    const biography = result({
+      title: 'Пушкин',
+      authors: ['Л. М. Аринштейн'],
+      language: 'ru',
+      score: 1,
+    });
+
+    const sorted = [biography, skazki].sort(compareResults('ru', 'Пушкин'));
+    expect(sorted[0].title).toBe('Сказки');
+  });
+
+  it('транслитерированная книга автора всё равно выше биографии', () => {
+    // Автор важнее алфавита названия: «Fairy tales» Пушкина нужнее,
+    // чем книга о Пушкине, пусть и с русским названием.
+    const fairyTales = result({ title: 'Fairy tales', authors: [pushkin], score: 1 });
+    const biography = result({ title: 'Пушкин', authors: ['Л. М. Аринштейн'], score: 1 });
+
+    const sorted = [biography, fairyTales].sort(compareResults('ru', 'Пушкин'));
+    expect(sorted[0].title).toBe('Fairy tales');
+  });
+
+  it('при поиске по названию правило про автора не мешает', () => {
+    const exact = result({ title: 'Пиковая дама', authors: [pushkin], score: 0.95 });
+    const other = result({ title: 'Сказки', authors: [pushkin], score: 0.5 });
+
+    const sorted = [other, exact].sort(compareResults('ru', 'Пиковая дама'));
+    expect(sorted[0].title).toBe('Пиковая дама');
   });
 });
 
