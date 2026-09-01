@@ -23,7 +23,7 @@ const J_GUARD_RE = new RegExp(J_GUARD, 'g');
  * плейсхолдером. «ё» заменяется на «е» до нормализации.
  */
 export function normalizeText(input: string): string {
-  return input
+  return stripLigatureMarks(input)
     .toLowerCase()
     .replace(/ё/g, 'е')
     .replace(/й/g, J_GUARD)
@@ -33,6 +33,18 @@ export function normalizeText(input: string): string {
     .replace(/[^\p{L}\p{N}\s]/gu, ' ')
     .replace(/\s+/g, ' ')
     .trim();
+}
+
+/**
+ * Убирает половинки лигатур ALA-LC (U+FE20–U+FE2F).
+ *
+ * Библиотечная транслитерация кодирует ими диграфы: «ю» записывается как
+ * «i͡u» с невидимой скобкой поверх пары букв. Шрифты их обычно не
+ * отрисовывают, и в интерфейсе получается «Li◻u◻dmila» вместо
+ * «Liudmila». В названиях из OpenLibrary такое встречается постоянно.
+ */
+export function stripLigatureMarks(input: string): string {
+  return input.replace(/[︠-︯]/g, '');
 }
 
 /** Доминирующий алфавит строки. */

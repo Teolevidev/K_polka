@@ -5,7 +5,12 @@ import type {
   BookSearchResponse,
 } from './types';
 import { detectQueryKind } from './isbn';
-import { normalizeText, fuzzyScore, preferredLanguage } from './normalize';
+import {
+  normalizeText,
+  fuzzyScore,
+  preferredLanguage,
+  detectScript,
+} from './normalize';
 import { searchGoogleBooks } from './google';
 import { searchOpenLibrary } from './openlibrary';
 
@@ -142,6 +147,23 @@ async function runSource(
 const LANG_BONUS = 0.15;
 
 /**
+ * Бонус названию, набранному тем же алфавитом, что и запрос.
+ *
+ * OpenLibrary отдаёт русские книги из библиотечных каталогов в
+ * транслитерации ALA-LC: «Пиковая дама» приходит как «Pikovaia dama».
+ * Язык у такой записи стоит русский, поэтому языковой бонус её не
+ * отличает — различает только алфавит названия.
+ */
+const TITLE_SCRIPT_BONUS = 0.1;
+
+/** Название набрано тем же алфавитом, что и запрос. */
+export function titleMatchesQueryScript(book: NormalizedBook, query: string): boolean {
+  const queryScript = detectScript(query);
+  if (queryScript === 'other') return false;
+  return detectScript(book.title) === queryScript;
+}
+
+/**
  * Скор книги. Учитывает:
  *  - совпадение названия (fuzzy),
  *  - точное совпадение названия → большой бонус,
@@ -185,6 +207,14 @@ export function scoreBook(
     score = Math.min(1, score + LANG_BONUS);
   }
 
+  // Алфавит названия. Запрос «Пушкин» совпадает с автором, а не с
+  // названием, поэтому у всех его книг балл почти одинаковый и решают
+  // тайбрейкеры. Без этого романизованные записи OpenLibrary вытесняют
+  // наверх русские: у них больше изданий.
+  if (titleMatchesQueryScript(book, query)) {
+    score = Math.min(1, score + TITLE_SCRIPT_BONUS);
+  }
+
   return Number(score.toFixed(4));
 }
 
@@ -198,7 +228,7 @@ export function scoreBook(
  * всегда больше, чем у перевода, поэтому иначе английская запись
  * выигрывает у русской при равной релевантности.
  */
-export function compareResults(preferredLang: string | null = null) {
+export function compareResults(preferredLang: string | null = null, query = '') {
   return (a: SearchResultBook, b: SearchResultBook): number => {
     if (b.score !== a.score) return b.score - a.score;
 
@@ -207,6 +237,15 @@ export function compareResults(preferredLang: string | null = null) {
         (b.language === preferredLang ? 1 : 0) -
         (a.language === preferredLang ? 1 : 0);
       if (langDelta !== 0) return langDelta;
+    }
+
+    // Алфавит названия важнее числа изданий: у романизованных записей
+    // изданий заметно больше, и иначе они выигрывают у русских.
+    if (query) {
+      const scriptDelta =
+        (titleMatchesQueryScript(b, query) ? 1 : 0) -
+        (titleMatchesQueryScript(a, query) ? 1 : 0);
+      if (scriptDelta !== 0) return scriptDelta;
     }
 
     const editionDelta = (b.editionCount ?? 1) - (a.editionCount ?? 1);
@@ -272,7 +311,7 @@ export async function searchBooks(rawQuery: string): Promise<BookSearchResponse>
     }))
     .filter((b) => isbn || b.score >= 0.25);
 
-  scored.sort(compareResults(preferredLang));
+  scored.sort(compareResults(preferredLang, isbn ? '' : query));
 
   return {
     query,

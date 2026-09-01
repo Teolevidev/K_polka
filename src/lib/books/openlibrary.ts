@@ -1,5 +1,6 @@
 import type { NormalizedBook } from './types';
 import { cleanIsbn, isValidIsbn13, isValidIsbn10 } from './isbn';
+import { stripLigatureMarks } from './normalize';
 
 /**
  * Клиент OpenLibrary API.
@@ -98,9 +99,11 @@ function normalizeDoc(doc: OpenLibraryDoc): NormalizedBook | null {
     sourceId: doc.key,
     isbn13,
     isbn10,
-    title: doc.title,
-    subtitle: doc.subtitle ?? null,
-    authors: doc.author_name ?? [],
+    // Названия приходят из MARC-каталогов в транслитерации ALA-LC,
+    // с невидимыми половинками лигатур внутри — их убираем.
+    title: stripLigatureMarks(doc.title),
+    subtitle: doc.subtitle ? stripLigatureMarks(doc.subtitle) : null,
+    authors: (doc.author_name ?? []).map(stripLigatureMarks),
     description: null, // подробное описание — отдельным запросом на /works/{key}.json
     coverUrl: doc.cover_i ? `${COVER_BASE}/id/${doc.cover_i}-M.jpg` : null,
     pageCount: doc.number_of_pages_median ?? null,

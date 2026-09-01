@@ -6,10 +6,12 @@ import {
   fuzzyScore,
   detectScript,
   preferredLanguage,
+  stripLigatureMarks,
 } from '@/lib/books/normalize';
 import {
   scoreBook,
   compareResults,
+  titleMatchesQueryScript,
   dedupeKey,
   mergeBooks,
   buildWorkIndex,
@@ -283,6 +285,55 @@ describe('схлопывание переводов через work OpenLibrary'
     const merged = mergeBooks(googleRu, olWork, 'ru');
     expect(merged.editionCount).toBe(12);
     expect(merged.workId).toBe('/works/OL123W');
+  });
+});
+
+describe('транслитерация ALA-LC из OpenLibrary', () => {
+  // Библиотечные каталоги записывают «ю» как «i͡u» — с половинками
+  // лигатуры U+FE20/FE21, которые шрифты не рисуют.
+  const raw = 'Ruslan i Li︠u︡dmila';
+
+  it('половинки лигатур убираются из названия', () => {
+    expect(stripLigatureMarks(raw)).toBe('Ruslan i Liudmila');
+  });
+
+  it('normalizeText тоже их снимает, чтобы поиск совпадал', () => {
+    expect(normalizeText(raw)).toBe('ruslan i liudmila');
+  });
+
+  it('чистая строка не меняется', () => {
+    expect(stripLigatureMarks('Пиковая дама')).toBe('Пиковая дама');
+  });
+});
+
+describe('алфавит названия против транслитерации', () => {
+  // Ровно случай со скриншота: запрос «Пушкин» совпадает с автором,
+  // поэтому баллы почти равны и всё решают тайбрейкеры.
+  const cyrillic = { title: 'Пиковая дама', authors: ['Александр Сергеевич Пушкин'] };
+  const romanized = { title: 'Pikovaia dama', authors: ['Александр Сергеевич Пушкин'] };
+
+  it('кириллическое название получает больше транслитерированного', () => {
+    expect(scoreBook(book(cyrillic), 'Пушкин', 'ru')).toBeGreaterThan(
+      scoreBook(book(romanized), 'Пушкин', 'ru'),
+    );
+  });
+
+  it('кириллическое название обгоняет транслитерацию с бо́льшим числом изданий', () => {
+    // Записи OpenLibrary несут большой editionCount, у Google его нет
+    // вовсе — из-за этого транслитерация и вытесняла русские названия.
+    const ru = result({ ...cyrillic, language: 'ru', editionCount: 1, score: 0.9 });
+    const alaLc = result({ ...romanized, language: 'ru', editionCount: 60, score: 0.9 });
+
+    const sorted = [alaLc, ru].sort(compareResults('ru', 'Пушкин'));
+    expect(sorted[0].title).toBe('Пиковая дама');
+  });
+
+  it('на латинский запрос алфавит названия не мешает', () => {
+    const en = result({ title: 'The Queen of Spades', language: 'en', editionCount: 60, score: 0.9 });
+    const ru = result({ title: 'Пиковая дама', language: 'ru', editionCount: 1, score: 0.9 });
+
+    const sorted = [ru, en].sort(compareResults(null, 'Pushkin'));
+    expect(sorted[0].title).toBe('The Queen of Spades');
   });
 });
 
