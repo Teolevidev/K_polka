@@ -70,30 +70,27 @@ function normalizeVolume(volume: GoogleVolume): NormalizedBook | null {
 
 /**
  * Ищет книги в Google Books.
+ *
+ * Язык здесь намеренно НЕ фильтруется. Параметр langRestrict у Google
+ * работает как жёсткий фильтр по метаданным тома, а у русских изданий язык
+ * проставлен далеко не всегда: с `langRestrict=ru` запрос «Лавр Водолазкин»
+ * возвращал пусто. Предпочтение русскому изданию делается ранжированием
+ * в search.ts — оно меняет порядок выдачи, но ничего из неё не выбрасывает.
+ *
  * @param query   свободный текст или ISBN
- * @param options isbn — поиск строго по ISBN; signal — для тайм-аута;
- *                lang — код языка для langRestrict
+ * @param options isbn — поиск строго по ISBN; signal — для тайм-аута
  */
 export async function searchGoogleBooks(
   query: string,
-  options: {
-    isbn?: boolean;
-    signal?: AbortSignal;
-    limit?: number;
-    lang?: string | null;
-  } = {},
+  options: { isbn?: boolean; signal?: AbortSignal; limit?: number } = {},
 ): Promise<NormalizedBook[]> {
-  const { isbn = false, signal, limit = 20, lang = null } = options;
+  const { isbn = false, signal, limit = 20 } = options;
   const q = isbn ? `isbn:${cleanIsbn(query)}` : query;
 
   const url = new URL(ENDPOINT);
   url.searchParams.set('q', q);
   url.searchParams.set('maxResults', String(Math.min(limit, 40)));
   url.searchParams.set('printType', 'books');
-  // Поиск по ISBN однозначен — язык там только мешает.
-  if (lang && !isbn) {
-    url.searchParams.set('langRestrict', lang);
-  }
   if (process.env.GOOGLE_BOOKS_API_KEY) {
     url.searchParams.set('key', process.env.GOOGLE_BOOKS_API_KEY);
   }

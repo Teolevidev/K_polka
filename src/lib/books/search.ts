@@ -131,10 +131,15 @@ async function runSource(
   }
 }
 
-/** Бонус за совпадение языка издания с языком запроса. */
+/**
+ * Бонус за совпадение языка издания с языком запроса.
+ *
+ * Именно бонус, без парного штрафа иноязычным изданиям: результаты
+ * отсекаются по порогу score >= 0.25, и штраф утаскивал пограничные книги
+ * под порог. Тогда редкая книга, найденная только в переводе, пропадала
+ * из выдачи совсем. Бонус же может изменить порядок, но ничего не теряет.
+ */
 const LANG_BONUS = 0.15;
-/** Штраф изданию на другом языке, когда язык запроса понятен. */
-const LANG_PENALTY = 0.1;
 
 /**
  * Скор книги. Учитывает:
@@ -176,11 +181,8 @@ export function scoreBook(
   // Язык. Без этого русское и английское издание одной книги получают
   // одинаковый балл, и наверх всплывает то, у которого больше изданий, —
   // почти всегда англоязычное.
-  if (preferredLang && book.language) {
-    score =
-      book.language === preferredLang
-        ? Math.min(1, score + LANG_BONUS)
-        : Math.max(0, score - LANG_PENALTY);
+  if (preferredLang && book.language === preferredLang) {
+    score = Math.min(1, score + LANG_BONUS);
   }
 
   return Number(score.toFixed(4));
@@ -227,12 +229,12 @@ export async function searchBooks(rawQuery: string): Promise<BookSearchResponse>
   const isbn = kind === 'isbn';
   const preferredLang = isbn ? null : preferredLanguage(query);
 
-  // Google ограничиваем языком запроса, OpenLibrary — намеренно нет:
-  // так у нас остаётся охват на случай, когда русского издания просто
-  // не существует и книга есть только в оригинале.
+  // Языком источники не ограничиваем: жёсткий фильтр выбрасывает книги,
+  // у которых язык в метаданных не проставлен, а таких среди русских
+  // изданий много. Предпочтение языку делается ниже, ранжированием.
   const sourceResults = await Promise.all([
     runSource('google', (signal) =>
-      searchGoogleBooks(query, { isbn, signal, limit: 30, lang: preferredLang }),
+      searchGoogleBooks(query, { isbn, signal, limit: 30 }),
     ),
     runSource('openlibrary', (signal) =>
       searchOpenLibrary(query, { isbn, signal, limit: 30 }),

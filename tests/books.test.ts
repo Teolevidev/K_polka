@@ -172,6 +172,13 @@ describe('scoreBook — язык выдачи', () => {
     const unknown = book({ title: 'Лавр', language: null });
     expect(scoreBook(unknown, query, 'ru')).toBe(scoreBook(unknown, query, null));
   });
+
+  it('иноязычное издание не теряет баллов, а только не получает бонус', () => {
+    // Штраф утаскивал пограничные книги под порог отсечения 0.25, и книга,
+    // существующая только в переводе, пропадала из выдачи совсем.
+    const query = 'Лавр Водолазкин';
+    expect(scoreBook(en, query, 'ru')).toBe(scoreBook(en, query, null));
+  });
 });
 
 describe('compareResults — порядок выдачи', () => {
