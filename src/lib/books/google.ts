@@ -22,6 +22,8 @@ interface GoogleVolume {
     language?: string;
     imageLinks?: { thumbnail?: string; smallThumbnail?: string };
     industryIdentifiers?: { type: string; identifier: string }[];
+    averageRating?: number;
+    ratingsCount?: number;
   };
 }
 
@@ -59,6 +61,10 @@ function normalizeVolume(volume: GoogleVolume): NormalizedBook | null {
     language: info.language ?? null,
     genres: info.categories ?? [],
     mediaType: 'book',
+    externalRating:
+      typeof info.averageRating === 'number' && (info.ratingsCount ?? 0) > 0
+        ? { average: info.averageRating, count: info.ratingsCount ?? 0 }
+        : null,
   };
 }
 

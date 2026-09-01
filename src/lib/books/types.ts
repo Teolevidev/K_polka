@@ -44,6 +44,14 @@ export interface NormalizedBook {
    * Заполняет только OpenLibrary.
    */
   editionIsbns?: string[];
+  /**
+   * Оценка из внешнего источника по шкале 1–5.
+   *
+   * Важно: у нас своя шкала 1–10, смешивать их нельзя. Это вспомогательный
+   * сигнал для книг, которые в клубе ещё никто не оценил, и показывать его
+   * нужно отдельно и с явной подписью, чей это рейтинг.
+   */
+  externalRating?: { average: number; count: number } | null;
 }
 
 export interface SearchResultBook extends NormalizedBook {

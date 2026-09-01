@@ -107,6 +107,11 @@ export function mergeBooks(
       (a.editionIsbns?.length ?? 0) >= (b.editionIsbns?.length ?? 0)
         ? a.editionIsbns
         : b.editionIsbns,
+    // Из двух внешних оценок берём ту, что опирается на больше голосов.
+    externalRating:
+      (a.externalRating?.count ?? 0) >= (b.externalRating?.count ?? 0)
+        ? (a.externalRating ?? b.externalRating ?? null)
+        : (b.externalRating ?? null),
   };
 }
 

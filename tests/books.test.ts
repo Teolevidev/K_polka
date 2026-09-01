@@ -279,6 +279,30 @@ describe('схлопывание переводов через work OpenLibrary'
   });
 });
 
+describe('внешние оценки', () => {
+  it('при склейке побеждает оценка с бо́льшим числом голосов', () => {
+    const few = book({ title: 'Лавр', externalRating: { average: 4.9, count: 3 } });
+    const many = book({ title: 'Лавр', externalRating: { average: 4.1, count: 900 } });
+
+    expect(mergeBooks(few, many).externalRating).toEqual({ average: 4.1, count: 900 });
+    expect(mergeBooks(many, few).externalRating).toEqual({ average: 4.1, count: 900 });
+  });
+
+  it('оценка подхватывается, даже если у первого издания её нет', () => {
+    const none = book({ title: 'Лавр', externalRating: null });
+    const rated = book({ title: 'Лавр', externalRating: { average: 4.1, count: 900 } });
+
+    expect(mergeBooks(none, rated).externalRating).toEqual({ average: 4.1, count: 900 });
+  });
+
+  it('когда оценок нет нигде, остаётся null', () => {
+    const a = book({ title: 'Лавр', externalRating: null });
+    const b = book({ title: 'Лавр' });
+
+    expect(mergeBooks(a, b).externalRating).toBeNull();
+  });
+});
+
 describe('book ref — кодирование ссылок', () => {
   it('кодирование и декодирование возвращает исходное значение', () => {
     const ref = encodeBookRef('openlibrary', '/works/OL45883W');

@@ -23,6 +23,8 @@ const FIELDS = [
   'language',
   'subject',
   'edition_count',
+  'ratings_average',
+  'ratings_count',
 ].join(',');
 
 interface OpenLibraryDoc {
@@ -37,6 +39,8 @@ interface OpenLibraryDoc {
   language?: string[];
   subject?: string[];
   edition_count?: number;
+  ratings_average?: number;
+  ratings_count?: number;
 }
 
 interface OpenLibraryResponse {
@@ -107,6 +111,10 @@ function normalizeDoc(doc: OpenLibraryDoc): NormalizedBook | null {
     editionCount: doc.edition_count ?? 1,
     workId: doc.key,
     editionIsbns: collectIsbn13s(doc.isbn),
+    externalRating:
+      typeof doc.ratings_average === 'number' && (doc.ratings_count ?? 0) > 0
+        ? { average: doc.ratings_average, count: doc.ratings_count ?? 0 }
+        : null,
   };
 }
 
