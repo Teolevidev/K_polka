@@ -1,0 +1,180 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Lora:wght@500;600&display=swap">
+  <style>
+    body { margin: 0; font-family: 'Inter', system-ui, -apple-system, sans-serif; }
+    a { color: #96412C; text-decoration: none; }
+    a:hover { color: #7A3524; }
+    h1, h2, h3 { font-family: 'Lora', Georgia, serif; margin: 0; text-wrap: balance; }
+    p { margin: 0; }
+  </style>
+</helmet>
+
+<div style="background: {{paper}}; color: #2A2622; min-height: 100%;">
+
+  <!-- Шапка -->
+  <div style="display: flex; align-items: center; gap: 16px; height: 64px; padding: 0 80px; border-bottom: 1px solid #E2DDD5; background: rgba(252,250,248,0.9);">
+    <div style="display: flex; align-items: center; gap: 8px;">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="{{brand}}" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M4 4.5A1.5 1.5 0 0 1 5.5 3H19v18H5.5A1.5 1.5 0 0 1 4 19.5z"></path>
+        <path d="M9 3v18"></path>
+      </svg>
+      <span style="font-family: 'Lora', Georgia, serif; font-size: 19px; font-weight: 600; letter-spacing: -0.01em;">Книжная полка</span>
+    </div>
+
+    <div style="flex-grow: 1; display: flex; justify-content: center;">
+      <div style="display: flex; align-items: center; gap: 8px; width: 100%; max-width: 420px; height: 36px; padding: 0 12px; border: 1px solid #E2DDD5; border-radius: 8px; background: #FFFFFF;">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#746B63" stroke-width="2" stroke-linecap="round">
+          <circle cx="11" cy="11" r="7"></circle><path d="m20 20-3.5-3.5"></path>
+        </svg>
+        <span style="font-size: 14px; color: #746B63;">Книги, авторы, люди</span>
+      </div>
+    </div>
+
+    <div style="display: flex; align-items: center; gap: 4px;">
+      <span style="font-size: 14px; font-weight: 500; padding: 0 12px; color: #2A2622;">Цитаты</span>
+      <span style="font-size: 14px; font-weight: 500; padding: 0 12px; color: #2A2622;">Обзор</span>
+      <span style="font-size: 14px; font-weight: 500; padding: 0 12px; color: #2A2622;">Моя полка</span>
+      <div style="display: flex; align-items: center; justify-content: center; height: 40px; padding: 0 16px; border-radius: 8px; background: {{brand}}; color: #FCFAF8; font-size: 14px; font-weight: 500; margin-left: 8px;">Войти</div>
+    </div>
+  </div>
+
+  <!-- Герой -->
+  <div style="display: flex; flex-direction: column; align-items: center; gap: 24px; padding: 88px 80px 0;">
+    <h1 style="font-size: 52px; font-weight: 600; line-height: 1.2; text-align: center; max-width: 720px; letter-spacing: -0.02em;">Клуб для тех, кто и так читает</h1>
+    <p style="font-size: 18px; line-height: 1.5; color: #746B63; text-align: center; max-width: 560px;">Закрытый книжный клуб и трекер прочитанного для своих. Ведите полку, собирайте цитаты, обсуждайте без спешки.</p>
+    <div style="display: flex; gap: 12px; margin-top: 8px;">
+      <div style="display: flex; align-items: center; gap: 8px; height: 48px; padding: 0 24px; border-radius: 8px; background: {{brand}}; color: #FCFAF8; font-size: 16px; font-weight: 500;">
+        Присоединиться
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#FCFAF8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"></path><path d="m13 6 6 6-6 6"></path></svg>
+      </div>
+      <div style="display: flex; align-items: center; height: 48px; padding: 0 24px; border-radius: 8px; border: 1px solid #E2DDD5; background: #FFFFFF; font-size: 16px; font-weight: 500;">Как это устроено</div>
+    </div>
+  </div>
+
+  <!-- Коллаж обложек -->
+  <div style="display: flex; justify-content: center; align-items: flex-end; gap: 20px; padding: 64px 80px 0;">
+    <sc-for list="{{covers}}" as="c" hint-placeholder-count="7">
+      <div style="width: 132px; height: 198px; border-radius: 4px; background: {{c.bg}}; display: flex; flex-direction: column; justify-content: space-between; padding: 14px; transform: {{c.tilt}}; box-shadow: 0 1px 3px rgba(0,0,0,0.06);">
+        <span style="font-family: 'Lora', Georgia, serif; font-size: 14px; font-weight: 600; line-height: 1.25; color: {{c.fg}};">{{c.title}}</span>
+        <span style="font-size: 10px; letter-spacing: 0.06em; text-transform: uppercase; color: {{c.fg}}; opacity: 0.72;">{{c.author}}</span>
+      </div>
+    </sc-for>
+  </div>
+
+  <!-- Возможности -->
+  <div style="padding: 96px 80px 0;">
+    <h2 style="font-size: 30px; font-weight: 600; text-align: center; line-height: 1.3;">Что внутри</h2>
+    <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 20px; margin-top: 36px;">
+      <sc-for list="{{features}}" as="f" hint-placeholder-count="6">
+        <div style="background: #FFFFFF; border: 1px solid #E2DDD5; border-radius: 10px; padding: 24px; display: flex; flex-direction: column; gap: 10px;">
+          <div style="width: 36px; height: 36px; border-radius: 8px; background: #F1ECE4; display: flex; align-items: center; justify-content: center;">
+            <div style="width: 18px; height: 18px; border-radius: 4px; background: {{f.dot}};"></div>
+          </div>
+          <h3 style="font-size: 19px; font-weight: 600; line-height: 1.3; margin-top: 4px;">{{f.title}}</h3>
+          <p style="font-size: 15px; line-height: 1.5; color: #746B63;">{{f.body}}</p>
+        </div>
+      </sc-for>
+    </div>
+  </div>
+
+  <!-- Цитата дня -->
+  <div style="padding: 96px 80px 0;">
+    <div style="background: #F1ECE4; border-radius: 10px; padding: 56px 64px; display: flex; flex-direction: column; align-items: center; gap: 20px;">
+      <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="{{brand}}" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M10 11H6a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h3a1 1 0 0 1 1 1v7c0 2.2-1.3 3.6-3 4"></path>
+        <path d="M20 11h-4a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h3a1 1 0 0 1 1 1v7c0 2.2-1.3 3.6-3 4"></path>
+      </svg>
+      <p style="font-family: 'Lora', Georgia, serif; font-size: 26px; line-height: 1.45; text-align: center; max-width: 720px; color: #2A2622;">Человек, который читает книги, проживает тысячу жизней. Человек, который не читает, проживает только одну.</p>
+      <div style="display: flex; align-items: center; gap: 10px; margin-top: 4px;">
+        <div style="width: 28px; height: 28px; border-radius: 999px; background: #D8CFC0;"></div>
+        <span style="font-size: 14px; color: #746B63;">Марина выписала из «Игры престолов», с. 412</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Отзывы участников -->
+  <div style="padding: 96px 80px 0;">
+    <h2 style="font-size: 30px; font-weight: 600; text-align: center; line-height: 1.3;">Что говорят участники</h2>
+    <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 20px; margin-top: 36px;">
+      <sc-for list="{{voices}}" as="v" hint-placeholder-count="3">
+        <div style="background: #FFFFFF; border: 1px solid #E2DDD5; border-radius: 10px; padding: 20px; display: flex; flex-direction: column; gap: 12px;">
+          <div style="display: flex; align-items: center; gap: 10px;">
+            <div style="width: 36px; height: 36px; border-radius: 999px; background: #EDE5D9;"></div>
+            <span style="font-size: 15px; font-weight: 500;">{{v.name}}</span>
+          </div>
+          <p style="font-size: 15px; line-height: 1.5; color: #746B63;">{{v.text}}</p>
+        </div>
+      </sc-for>
+    </div>
+  </div>
+
+  <!-- Финальный призыв -->
+  <div style="padding: 96px 80px 0;">
+    <div style="border: 1px solid #E2DDD5; border-radius: 10px; background: #FFFFFF; padding: 56px; display: flex; flex-direction: column; align-items: center; gap: 16px;">
+      <h2 style="font-size: 30px; font-weight: 600; text-align: center; line-height: 1.3;">Первый круг остается основателями навсегда</h2>
+      <p style="font-size: 16px; line-height: 1.5; color: #746B63; text-align: center; max-width: 520px;">Клуб начинается с небольшого круга своих. Кто пришел в начале, сохраняет этот статус, что бы дальше ни выросло.</p>
+      <div style="display: flex; align-items: center; gap: 8px; height: 48px; padding: 0 24px; border-radius: 8px; background: {{brand}}; color: #FCFAF8; font-size: 16px; font-weight: 500; margin-top: 8px;">
+        Оставить заявку
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#FCFAF8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"></path><path d="m13 6 6 6-6 6"></path></svg>
+      </div>
+    </div>
+  </div>
+
+  <!-- Подвал -->
+  <div style="margin-top: 96px; border-top: 1px solid #E2DDD5; padding: 32px 80px; display: flex; align-items: center; justify-content: space-between;">
+    <span style="font-size: 14px; color: #746B63;">Книжная полка</span>
+    <div style="display: flex; gap: 24px;">
+      <span style="font-size: 14px; color: #746B63;">О клубе</span>
+      <span style="font-size: 14px; color: #746B63;">Блог</span>
+      <span style="font-size: 14px; color: #746B63;">Почта</span>
+    </div>
+  </div>
+
+</div>
+</x-dc>
+
+<script data-dc-script data-props='{
+  "brand": {"editor": "color", "default": "#96412C", "options": ["#96412C", "#3F5C4A", "#2F4858", "#6B4E7A"], "section": "Цвета"},
+  "paper": {"editor": "color", "default": "#FCFAF8", "options": ["#FCFAF8", "#F8F8F8", "#FAF7F0", "#FFFFFF"], "section": "Цвета"}
+}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {
+      brand: this.props.brand ?? '#96412C',
+      paper: this.props.paper ?? '#FCFAF8',
+      covers: [
+        { title: 'Тень горы',        author: 'Робертс',   bg: '#8C5A3C', fg: '#FDF8F2', tilt: 'rotate(-3deg)' },
+        { title: 'Средневековье',    author: 'Ле Гофф',   bg: '#3F5C4A', fg: '#F4F8F5', tilt: 'rotate(2deg)' },
+        { title: 'Дюна',             author: 'Герберт',   bg: '#C08A3E', fg: '#2A2622', tilt: 'rotate(-1deg)' },
+        { title: 'Сто лет одиночества', author: 'Маркес', bg: '#7A3524', fg: '#FDF3EE', tilt: 'rotate(3deg)' },
+        { title: 'Лавр',             author: 'Водолазкин', bg: '#2F4858', fg: '#EEF4F7', tilt: 'rotate(-2deg)' },
+        { title: 'Щегол',            author: 'Тартт',     bg: '#D8CFC0', fg: '#2A2622', tilt: 'rotate(1deg)' },
+        { title: 'Пикник',           author: 'Стругацкие', bg: '#5C5140', fg: '#F7F3EA', tilt: 'rotate(-3deg)' }
+      ],
+      features: [
+        { dot: '#96412C', title: 'Своя полка',        body: 'Хочу прочитать, читаю, прочитано, брошено. Оценка по десятибалльной шкале, личные заметки, перечитывания.' },
+        { dot: '#CC9933', title: 'Цитаты',            body: 'Выписывайте строки, которые зацепили. Вставьте текст из читалки или сфотографируйте страницу.' },
+        { dot: '#3F5C4A', title: 'Обсуждения',        body: 'Асинхронно по умолчанию: зашли, когда есть минута. Живые встречи, когда сами захотим.' },
+        { dot: '#2F4858', title: 'Цели без давления', body: 'Годовой план и прогресс. Без наказывающих серий и рейтингов, кто больше прочитал.' },
+        { dot: '#8C5A3C', title: 'Что читать дальше', body: 'Подборки от своих, редакционные обзоры и подсказка, когда совсем не знаете, за что взяться.' },
+        { dot: '#6B4E7A', title: 'Только свои',       body: 'Вход по приглашению. Полки и обсуждения видят участники, а не поисковики.' }
+      ],
+      voices: [
+        { name: '[ИМЯ УЧАСТНИКА]', text: '[ОТЗЫВ ПОЯВИТСЯ ПОСЛЕ ЗАПУСКА КЛУБА - место под реальную цитату из опроса]' },
+        { name: '[ИМЯ УЧАСТНИКА]', text: '[ОТЗЫВ ПОЯВИТСЯ ПОСЛЕ ЗАПУСКА КЛУБА - место под реальную цитату из опроса]' },
+        { name: '[ИМЯ УЧАСТНИКА]', text: '[ОТЗЫВ ПОЯВИТСЯ ПОСЛЕ ЗАПУСКА КЛУБА - место под реальную цитату из опроса]' }
+      ]
+    };
+  }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,184 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Lora:wght@500;600&display=swap">
+  <style>
+    body { margin: 0; font-family: 'Inter', system-ui, -apple-system, sans-serif; }
+    a { color: #96412C; text-decoration: none; }
+    a:hover { color: #7A3524; }
+    h1, h2, h3 { font-family: 'Lora', Georgia, serif; margin: 0; text-wrap: balance; }
+    p { margin: 0; }
+  </style>
+</helmet>
+
+<div style="background: {{paper}}; color: #2A2622; min-height: 100%;">
+
+  <!-- Шапка -->
+  <div style="display: flex; align-items: center; gap: 16px; height: 64px; padding: 0 80px; border-bottom: 1px solid #E2DDD5; background: rgba(252,250,248,0.9);">
+    <div style="display: flex; align-items: center; gap: 8px;">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="{{brand}}" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M4 4.5A1.5 1.5 0 0 1 5.5 3H19v18H5.5A1.5 1.5 0 0 1 4 19.5z"></path><path d="M9 3v18"></path>
+      </svg>
+      <span style="font-family: 'Lora', Georgia, serif; font-size: 19px; font-weight: 600; letter-spacing: -0.01em;">Книжная полка</span>
+    </div>
+    <div style="flex-grow: 1; display: flex; justify-content: center;">
+      <div style="display: flex; align-items: center; gap: 8px; width: 100%; max-width: 420px; height: 36px; padding: 0 12px; border: 1px solid #E2DDD5; border-radius: 8px; background: #FFFFFF;">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#746B63" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"></circle><path d="m20 20-3.5-3.5"></path></svg>
+        <span style="font-size: 14px; color: #746B63;">Книги, авторы, люди</span>
+      </div>
+    </div>
+    <div style="display: flex; align-items: center; gap: 4px;">
+      <span style="font-size: 14px; font-weight: 500; padding: 0 12px;">Цитаты</span>
+      <span style="font-size: 14px; font-weight: 500; padding: 0 12px;">Обзор</span>
+      <span style="font-size: 14px; font-weight: 500; padding: 0 12px;">Моя полка</span>
+      <div style="width: 32px; height: 32px; border-radius: 999px; background: #EDE5D9; margin-left: 8px;"></div>
+    </div>
+  </div>
+
+  <div style="padding: 40px 80px 56px; display: flex; flex-direction: column; gap: 40px;">
+
+    <!-- Шапка профиля -->
+    <div style="display: flex; align-items: flex-start; gap: 24px;">
+      <div style="width: 96px; height: 96px; border-radius: 999px; background: #E0D3BE; flex-shrink: 0;"></div>
+      <div style="flex-grow: 1; display: flex; flex-direction: column; gap: 8px;">
+        <div style="display: flex; align-items: center; gap: 12px;">
+          <h1 style="font-size: 30px; font-weight: 600; line-height: 1.25;">Марина Ковалева</h1>
+          <span style="display: flex; align-items: center; gap: 5px; font-size: 12px; font-weight: 600; color: #7A5A1E; background: #F6EAD0; border-radius: 999px; padding: 4px 10px;">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#7A5A1E" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 2 3.1 6.3 6.9 1-5 4.9 1.2 6.9L12 17.8 5.8 21l1.2-6.9-5-4.9 6.9-1z"></path></svg>
+            Основатель
+          </span>
+        </div>
+        <span style="font-size: 15px; color: #746B63;">@marina</span>
+        <p style="font-size: 15px; line-height: 1.55; color: #4A433C; max-width: 620px; margin-top: 2px;">Читаю медленно и с карандашом. Люблю толстые романы и книги про средневековье. Выписываю все, что цепляет.</p>
+        <div style="display: flex; align-items: center; gap: 20px; margin-top: 6px;">
+          <span style="font-size: 14px; color: #746B63;"><span style="font-weight: 600; color: #2A2622;">8</span> подписок</span>
+          <span style="font-size: 14px; color: #746B63;"><span style="font-weight: 600; color: #2A2622;">11</span> подписчиков</span>
+          <span style="font-size: 14px; color: #746B63;">В клубе с марта 2026</span>
+        </div>
+      </div>
+      <div style="display: flex; align-items: center; height: 40px; padding: 0 16px; border-radius: 8px; border: 1px solid #E2DDD5; background: #FFFFFF; font-size: 14px; font-weight: 500;">Редактировать</div>
+    </div>
+
+    <!-- Показатели -->
+    <div style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 20px;">
+      <sc-for list="{{stats}}" as="s" hint-placeholder-count="4">
+        <div style="background: #FFFFFF; border: 1px solid #E2DDD5; border-radius: 10px; padding: 20px; display: flex; flex-direction: column; gap: 5px;">
+          <span style="font-size: 13px; color: #746B63;">{{s.label}}</span>
+          <span style="font-family: 'Lora', Georgia, serif; font-size: 32px; font-weight: 600; line-height: 1.1;">{{s.value}}</span>
+          <span style="font-size: 13px; color: #746B63;">{{s.note}}</span>
+        </div>
+      </sc-for>
+    </div>
+
+    <!-- Цель года -->
+    <div style="background: #FFFFFF; border: 1px solid #E2DDD5; border-radius: 10px; padding: 24px; display: flex; flex-direction: column; gap: 14px;">
+      <div style="display: flex; align-items: baseline; justify-content: space-between;">
+        <h2 style="font-size: 20px; font-weight: 600;">Цель на 2026 год</h2>
+        <span style="font-size: 15px; color: #746B63;"><span style="font-weight: 600; color: #2A2622;">23</span> из 30 книг</span>
+      </div>
+      <div style="height: 10px; border-radius: 999px; background: #F1EEE9; display: flex;">
+        <div style="width: 77%; border-radius: 999px; background: {{brand}};"></div>
+      </div>
+      <span style="font-size: 14px; color: #746B63;">Идете с опережением на 2 книги. Осталось 7 до конца года.</span>
+    </div>
+
+    <!-- Достижения -->
+    <div style="display: flex; flex-direction: column; gap: 16px;">
+      <h2 style="font-size: 22px; font-weight: 600;">Достижения</h2>
+      <div style="display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 16px;">
+        <sc-for list="{{badges}}" as="b" hint-placeholder-count="5">
+          <div style="background: #FFFFFF; border: 1px solid #E2DDD5; border-radius: 10px; padding: 18px; display: flex; flex-direction: column; align-items: center; gap: 10px; opacity: {{b.opacity}};">
+            <div style="width: 44px; height: 44px; border-radius: 999px; background: {{b.bg}}; display: flex; align-items: center; justify-content: center;">
+              <div style="width: 18px; height: 18px; border-radius: 4px; background: {{b.dot}};"></div>
+            </div>
+            <span style="font-size: 14px; font-weight: 500; text-align: center; line-height: 1.3;">{{b.name}}</span>
+            <span style="font-size: 12px; color: #746B63; text-align: center; line-height: 1.35;">{{b.note}}</span>
+          </div>
+        </sc-for>
+      </div>
+    </div>
+
+    <!-- Сейчас читает -->
+    <div style="display: flex; flex-direction: column; gap: 16px;">
+      <h2 style="font-size: 22px; font-weight: 600;">Сейчас читает</h2>
+      <div style="display: flex; gap: 20px;">
+        <sc-for list="{{reading}}" as="r" hint-placeholder-count="3">
+          <div style="width: 300px; background: #FFFFFF; border: 1px solid #E2DDD5; border-radius: 10px; padding: 16px; display: flex; gap: 14px;">
+            <div style="width: 62px; height: 93px; border-radius: 3px; background: {{r.bg}}; flex-shrink: 0;"></div>
+            <div style="display: flex; flex-direction: column; gap: 5px; min-width: 0;">
+              <span style="font-size: 15px; font-weight: 500; line-height: 1.3;">{{r.title}}</span>
+              <span style="font-size: 13px; color: #746B63;">{{r.author}}</span>
+              <div style="height: 5px; border-radius: 999px; background: #F1EEE9; display: flex; margin-top: 6px;">
+                <div style="width: {{r.pct}}; border-radius: 999px; background: {{brand}};"></div>
+              </div>
+              <span style="font-size: 12px; color: #746B63;">{{r.progress}}</span>
+            </div>
+          </div>
+        </sc-for>
+      </div>
+    </div>
+
+    <!-- Последние цитаты -->
+    <div style="display: flex; flex-direction: column; gap: 16px;">
+      <div style="display: flex; align-items: baseline; justify-content: space-between;">
+        <h2 style="font-size: 22px; font-weight: 600;">Выписки</h2>
+        <span style="font-size: 14px; color: {{brand}}; font-weight: 500;">Все 64</span>
+      </div>
+      <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 20px;">
+        <sc-for list="{{quotes}}" as="q" hint-placeholder-count="3">
+          <div style="background: #FFFFFF; border: 1px solid #E2DDD5; border-radius: 10px; padding: 20px; display: flex; flex-direction: column; gap: 12px;">
+            <p style="font-family: 'Lora', Georgia, serif; font-size: 16px; line-height: 1.55;">{{q.text}}</p>
+            <span style="font-size: 13px; color: #746B63; margin-top: auto;">{{q.book}}, с. {{q.page}}</span>
+          </div>
+        </sc-for>
+      </div>
+    </div>
+
+  </div>
+</div>
+</x-dc>
+
+<script data-dc-script data-props='{
+  "brand": {"editor": "color", "default": "#96412C", "options": ["#96412C", "#3F5C4A", "#2F4858", "#6B4E7A"], "section": "Цвета"},
+  "paper": {"editor": "color", "default": "#FCFAF8", "options": ["#FCFAF8", "#F8F8F8", "#FAF7F0", "#FFFFFF"], "section": "Цвета"}
+}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {
+      brand: this.props.brand ?? '#96412C',
+      paper: this.props.paper ?? '#FCFAF8',
+      stats: [
+        { label: 'Прочитано за год', value: '23',    note: 'книги' },
+        { label: 'Страниц',          value: '7 840', note: 'в среднем 341 на книгу' },
+        { label: 'Средняя оценка',   value: '8,4',   note: 'из 10' },
+        { label: 'Выписок',          value: '64',    note: 'из 19 книг' }
+      ],
+      badges: [
+        { name: 'Первая книга',   note: 'март 2026',      bg: '#F1ECE4', dot: '#96412C', opacity: '1' },
+        { name: 'Десять книг',    note: 'июнь 2026',      bg: '#F1ECE4', dot: '#CC9933', opacity: '1' },
+        { name: 'Пять жанров',    note: 'июль 2026',      bg: '#F1ECE4', dot: '#3F5C4A', opacity: '1' },
+        { name: 'Полсотни цитат', note: 'август 2026',    bg: '#F1ECE4', dot: '#2F4858', opacity: '1' },
+        { name: 'Сто книг',       note: 'осталось 77',    bg: '#F4F2EE', dot: '#C9C1B6', opacity: '0.55' }
+      ],
+      reading: [
+        { title: 'Лавр',              author: 'Водолазкин', bg: '#2F4858', pct: '56%', progress: '248 из 440 с.' },
+        { title: 'Средневековье',     author: 'Ле Гофф',    bg: '#3F5C4A', pct: '31%', progress: '96 из 310 с.' },
+        { title: 'Пикник на обочине', author: 'Стругацкие', bg: '#5C5140', pct: '82%', progress: '188 из 230 с.' }
+      ],
+      quotes: [
+        { text: 'Время дано нам по милосердию Божию, чтобы мы не запутались, ибо сознание человека не может вместить всех событий одновременно.', book: 'Лавр', page: '212' },
+        { text: 'Смерть настолько же неизбежна, насколько и невероятна.', book: 'Щегол', page: '502' },
+        { text: 'Мы живем в мире, где похороны важнее покойника, свадьба важнее любви, а внешность важнее ума.', book: 'Сто лет одиночества', page: '271' }
+      ]
+    };
+  }
+}
+</script>
+</body>
+</html>
