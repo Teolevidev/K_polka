@@ -141,11 +141,29 @@ export async function searchOpenLibrary(
   url.searchParams.set('limit', String(Math.min(limit, 50)));
   url.searchParams.set('fields', FIELDS);
 
-  const res = await fetch(url, {
-    signal,
-    headers: { 'User-Agent': 'KnizhnayaPolka/0.1 (book tracker)' },
-    next: { revalidate: 3600 },
-  });
+  const request = (revalidate: number) =>
+    fetch(url, {
+      signal,
+      headers: { 'User-Agent': 'KnizhnayaPolka/0.1 (book tracker)' },
+      next: { revalidate },
+    });
+
+  // OpenLibrary заметно нестабилен: диагностика с продакшена ловила
+  // «fetch failed» - обрыв на уровне сети, ещё до ответа. Это дорогая
+  // потеря: именно он отдаёт настоящие произведения русских авторов,
+  // тогда как Google по ним даёт в основном литературоведение.
+  // Без повтора источник молча выпадает, и выдача перекашивается.
+  let res: Response;
+  try {
+    res = await request(3600);
+  } catch {
+    res = await request(0);
+  }
+
+  if (res.status >= 500) {
+    res = await request(0);
+  }
+
   if (!res.ok) {
     throw new Error(`OpenLibrary вернул ${res.status}`);
   }
