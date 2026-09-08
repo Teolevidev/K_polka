@@ -2,6 +2,8 @@ import type { NormalizedBook } from './types';
 import type { BookRef } from './ref';
 import { cleanIsbn } from './isbn';
 import { getLocalBookById } from './local';
+import { resolveCoverUrl } from './cover';
+import { htmlToPlainText } from './normalize';
 import { createSupabaseServerClient } from '@/lib/supabase/server';
 import { isSupabaseConfigured } from '@/lib/supabase/env';
 
@@ -44,13 +46,32 @@ interface GoogleVolumeFull {
     title?: string;
     subtitle?: string;
     authors?: string[];
+    publisher?: string;
     publishedDate?: string;
     description?: string;
     pageCount?: number;
+    printedPageCount?: number;
     categories?: string[];
     language?: string;
-    imageLinks?: { thumbnail?: string; medium?: string; large?: string };
+    averageRating?: number;
+    ratingsCount?: number;
+    /**
+     * Google отдаёт до шести размеров обложки. У массовых изданий есть
+     * все, у редких - только smallThumbnail. Раньше мы читали три и для
+     * остальных книг оставались без картинки, хотя она была.
+     */
+    imageLinks?: {
+      smallThumbnail?: string;
+      thumbnail?: string;
+      small?: string;
+      medium?: string;
+      large?: string;
+      extraLarge?: string;
+    };
     industryIdentifiers?: { type: string; identifier: string }[];
+    infoLink?: string;
+    canonicalVolumeLink?: string;
+    previewLink?: string;
   };
 }
 
@@ -74,12 +95,18 @@ async function getGoogleBook(id: string): Promise<NormalizedBook | null> {
   const ids = info.industryIdentifiers ?? [];
   const isbn13 = ids.find((i) => i.type === 'ISBN_13')?.identifier ?? null;
   const isbn10 = ids.find((i) => i.type === 'ISBN_10')?.identifier ?? null;
-  const cover = (
-    info.imageLinks?.large ??
-    info.imageLinks?.medium ??
-    info.imageLinks?.thumbnail ??
-    ''
-  ).replace(/^http:/, 'https:');
+
+  // От большего к меньшему: на странице книги обложка крупная, и
+  // 128-пиксельный thumbnail на ней выглядит мылом.
+  const images = info.imageLinks ?? {};
+  const cover =
+    images.extraLarge ??
+    images.large ??
+    images.medium ??
+    images.small ??
+    images.thumbnail ??
+    images.smallThumbnail ??
+    null;
 
   return {
     source: 'google',
@@ -89,13 +116,21 @@ async function getGoogleBook(id: string): Promise<NormalizedBook | null> {
     title: info.title,
     subtitle: info.subtitle ?? null,
     authors: info.authors ?? [],
-    description: info.description ?? null,
-    coverUrl: cover || null,
-    pageCount: info.pageCount ?? null,
+    // Описание у Google приходит с разметкой - без очистки читатель
+    // видит теги прямо в аннотации.
+    description: info.description ? htmlToPlainText(info.description) : null,
+    coverUrl: cover,
+    pageCount: info.pageCount ?? info.printedPageCount ?? null,
     publishedDate: info.publishedDate ?? null,
+    publisher: info.publisher ?? null,
+    sourceUrl: info.canonicalVolumeLink ?? info.infoLink ?? info.previewLink ?? null,
     language: info.language ?? null,
     genres: info.categories ?? [],
     mediaType: 'book',
+    externalRating:
+      typeof info.averageRating === 'number' && (info.ratingsCount ?? 0) > 0
+        ? { average: info.averageRating, count: info.ratingsCount ?? 0 }
+        : null,
   };
 }
 
@@ -164,6 +199,8 @@ async function getOpenLibraryBook(key: string): Promise<NormalizedBook | null> {
       : null,
     pageCount: null,
     publishedDate: null,
+    publisher: null,
+    sourceUrl: `https://openlibrary.org${workPath}`,
     language: null,
     genres: (work.subjects ?? []).slice(0, 8),
     mediaType: 'book',
@@ -179,24 +216,32 @@ async function getOpenLibraryBook(key: string): Promise<NormalizedBook | null> {
  */
 export async function getBookByRef(ref: BookRef): Promise<NormalizedBook | null> {
   try {
-    switch (ref.source) {
-      case 'google':
-        return await getGoogleBook(ref.sourceId);
-      case 'openlibrary':
-        return await getOpenLibraryBook(ref.sourceId);
-      case 'local': {
-        // Книга из нашего каталога: заведена вручную или сохранена,
-        // когда кто-то положил её на полку.
-        if (!isSupabaseConfigured()) return null;
-        const supabase = await createSupabaseServerClient();
-        return await getLocalBookById(supabase, ref.sourceId);
-      }
-      default:
-        return null;
-    }
+    const book = await loadBook(ref);
+    // Обложку подбираем в одном месте для всех источников, чтобы
+    // страница книги и карточка в выдаче показывали одну и ту же.
+    return book ? { ...book, coverUrl: resolveCoverUrl(book) } : null;
   } catch (error) {
     if (error instanceof SourceUnavailableError) throw error;
     // Сеть не дошла или ответ не разобрался — это тоже не «книги нет».
     throw new SourceUnavailableError(ref.source, 0);
+  }
+}
+
+/** Разбор ссылки на источник: где именно лежит книга. */
+async function loadBook(ref: BookRef): Promise<NormalizedBook | null> {
+  switch (ref.source) {
+    case 'google':
+      return await getGoogleBook(ref.sourceId);
+    case 'openlibrary':
+      return await getOpenLibraryBook(ref.sourceId);
+    case 'local': {
+      // Книга из нашего каталога: заведена вручную или сохранена,
+      // когда кто-то положил её на полку.
+      if (!isSupabaseConfigured()) return null;
+      const supabase = await createSupabaseServerClient();
+      return await getLocalBookById(supabase, ref.sourceId);
+    }
+    default:
+      return null;
   }
 }

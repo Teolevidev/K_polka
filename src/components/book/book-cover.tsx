@@ -34,6 +34,10 @@ export function BookCover({ src, title, className }: BookCoverProps) {
           src={src}
           alt={`Обложка книги «${title}»`}
           loading="lazy"
+          decoding="async"
+          // Часть каталогов отдаёт картинки только без Referer: с чужим
+          // источником в заголовке приходит 403, и обложка не появляется.
+          referrerPolicy="no-referrer"
           onError={() => setFailed(true)}
           className="h-full w-full object-cover"
         />

@@ -1,5 +1,6 @@
 import type { NormalizedBook } from './types';
 import { cleanIsbn } from './isbn';
+import { htmlToPlainText } from './normalize';
 
 /**
  * Клиент Google Books API.
@@ -15,15 +16,25 @@ interface GoogleVolume {
     title?: string;
     subtitle?: string;
     authors?: string[];
+    publisher?: string;
     publishedDate?: string;
     description?: string;
     pageCount?: number;
     categories?: string[];
     language?: string;
-    imageLinks?: { thumbnail?: string; smallThumbnail?: string };
+    imageLinks?: {
+      smallThumbnail?: string;
+      thumbnail?: string;
+      small?: string;
+      medium?: string;
+      large?: string;
+      extraLarge?: string;
+    };
     industryIdentifiers?: { type: string; identifier: string }[];
     averageRating?: number;
     ratingsCount?: number;
+    infoLink?: string;
+    canonicalVolumeLink?: string;
   };
 }
 
@@ -40,10 +51,17 @@ function normalizeVolume(volume: GoogleVolume): NormalizedBook | null {
   const isbn13 = ids.find((i) => i.type === 'ISBN_13')?.identifier ?? null;
   const isbn10 = ids.find((i) => i.type === 'ISBN_10')?.identifier ?? null;
 
-  // Google отдаёт обложки по http — принудительно переводим на https
+  // Берём самую крупную из доступных: в выдаче обложка небольшая, но
+  // эта же запись уходит в каталог, а оттуда - на страницу книги.
+  // Протокол и лишние параметры чинит resolveCoverUrl.
+  const images = info.imageLinks ?? {};
   const cover =
-    info.imageLinks?.thumbnail?.replace(/^http:/, 'https:') ??
-    info.imageLinks?.smallThumbnail?.replace(/^http:/, 'https:') ??
+    images.extraLarge ??
+    images.large ??
+    images.medium ??
+    images.small ??
+    images.thumbnail ??
+    images.smallThumbnail ??
     null;
 
   return {
@@ -54,10 +72,12 @@ function normalizeVolume(volume: GoogleVolume): NormalizedBook | null {
     title: info.title,
     subtitle: info.subtitle ?? null,
     authors: info.authors ?? [],
-    description: info.description ?? null,
+    description: info.description ? htmlToPlainText(info.description) : null,
     coverUrl: cover,
     pageCount: info.pageCount ?? null,
     publishedDate: info.publishedDate ?? null,
+    publisher: info.publisher ?? null,
+    sourceUrl: info.canonicalVolumeLink ?? info.infoLink ?? null,
     language: info.language ?? null,
     genres: info.categories ?? [],
     mediaType: 'book',

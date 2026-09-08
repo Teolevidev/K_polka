@@ -1,11 +1,20 @@
 import type { Metadata } from 'next';
+import { Suspense } from 'react';
 import { notFound } from 'next/navigation';
+import { Star } from 'lucide-react';
 import { decodeBookRef } from '@/lib/books/ref';
 import { getBookByRef, SourceUnavailableError } from '@/lib/books/detail';
 import type { NormalizedBook } from '@/lib/books/types';
 import { SourceUnavailableNotice } from '@/components/book/source-unavailable-notice';
 import { BookCover } from '@/components/book/book-cover';
 import { AddToShelf } from '@/components/book/add-to-shelf';
+import { BookDetails } from '@/components/book/book-details';
+import { AuthorBlock, AuthorBlockSkeleton } from '@/components/book/author-block';
+import {
+  OtherEditions,
+  AuthorBooks,
+  RelatedRowSkeleton,
+} from '@/components/book/related-books';
 import { Badge } from '@/components/ui/badge';
 import { plural } from '@/lib/utils';
 import { isSupabaseConfigured } from '@/lib/supabase/env';
@@ -55,7 +64,7 @@ export async function generateMetadata({
   const { book } = loaded;
   return {
     title: book.title,
-    description: book.description?.slice(0, 160) ?? `${book.title} — на Книжной полке`,
+    description: book.description?.slice(0, 160) ?? `${book.title} - на Книжной полке`,
   };
 }
 
@@ -91,20 +100,12 @@ export default async function BookPage({ params }: BookPageProps) {
     ? await getReactionSummariesForTargets('review', reviewIds)
     : {};
 
-  const meta: { label: string; value: string }[] = [];
-  if (book.publishedDate) meta.push({ label: 'Год издания', value: book.publishedDate });
-  if (book.pageCount)
-    meta.push({
-      label: 'Объём',
-      value: `${book.pageCount} ${plural(book.pageCount, 'страница', 'страницы', 'страниц')}`,
-    });
-  if (book.isbn13) meta.push({ label: 'ISBN', value: book.isbn13 });
-  if (book.language) meta.push({ label: 'Язык', value: book.language.toUpperCase() });
+  const primaryAuthor = book.authors[0] ?? null;
 
   return (
-    <div className="container max-w-4xl py-6 sm:py-10">
+    <div className="container max-w-4xl space-y-10 py-6 sm:py-10">
+      {/* Шапка: обложка, название, автор, оценка, действия */}
       <div className="grid gap-6 sm:grid-cols-[200px_1fr] sm:gap-8">
-        {/* Обложка + действия */}
         <div className="mx-auto w-40 space-y-3 sm:mx-0 sm:w-full">
           <BookCover src={book.coverUrl} title={book.title} />
           <AddToShelf
@@ -114,7 +115,6 @@ export default async function BookPage({ params }: BookPageProps) {
           />
         </div>
 
-        {/* Информация */}
         <div className="space-y-5">
           <div className="space-y-1.5">
             <h1 className="text-2xl font-bold leading-tight sm:text-3xl">
@@ -130,6 +130,20 @@ export default async function BookPage({ params }: BookPageProps) {
             )}
           </div>
 
+          {/* Внешняя оценка. Подписываем источник: шкала у нас своя,
+              1-10, и смешивать её с чужой пятибалльной нельзя. */}
+          {book.externalRating && (
+            <p className="inline-flex items-center gap-1.5 text-sm text-muted-foreground">
+              <Star className="size-4 fill-accent text-accent" aria-hidden="true" />
+              <span className="font-medium text-foreground">
+                {book.externalRating.average.toFixed(1)}
+              </span>
+              из 5 в Google Books,{' '}
+              {book.externalRating.count}{' '}
+              {plural(book.externalRating.count, 'оценка', 'оценки', 'оценок')}
+            </p>
+          )}
+
           {book.genres.length > 0 && (
             <div className="flex flex-wrap gap-1.5">
               {book.genres.slice(0, 6).map((g) => (
@@ -138,17 +152,6 @@ export default async function BookPage({ params }: BookPageProps) {
                 </Badge>
               ))}
             </div>
-          )}
-
-          {meta.length > 0 && (
-            <dl className="grid grid-cols-2 gap-x-6 gap-y-2 text-sm sm:grid-cols-4">
-              {meta.map(({ label, value }) => (
-                <div key={label}>
-                  <dt className="text-xs text-muted-foreground">{label}</dt>
-                  <dd className="font-medium">{value}</dd>
-                </div>
-              ))}
-            </dl>
           )}
 
           <div className="space-y-2">
@@ -166,8 +169,29 @@ export default async function BookPage({ params }: BookPageProps) {
         </div>
       </div>
 
+      <BookDetails book={book} />
+
+      {/* Блоки ниже ходят во внешние источники. Каждый под своим Suspense:
+          страница книги показывается сразу, а справка и соседние книги
+          подъезжают по мере готовности и не задерживают друг друга. */}
+      {primaryAuthor && (
+        <Suspense fallback={<AuthorBlockSkeleton />}>
+          <AuthorBlock name={primaryAuthor} />
+        </Suspense>
+      )}
+
+      <Suspense fallback={<RelatedRowSkeleton title="Другие издания" />}>
+        <OtherEditions book={book} />
+      </Suspense>
+
+      {primaryAuthor && (
+        <Suspense fallback={<RelatedRowSkeleton title="Другие книги автора" />}>
+          <AuthorBooks book={book} />
+        </Suspense>
+      )}
+
       {/* Отзывы */}
-      <section className="mt-10 space-y-5 border-t border-border pt-8">
+      <section className="space-y-5 border-t border-border pt-8">
         <h2 className="text-xl font-semibold">Отзывы</h2>
         <ReviewForm
           bookRef={ref}

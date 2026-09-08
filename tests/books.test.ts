@@ -7,7 +7,17 @@ import {
   detectScript,
   preferredLanguage,
   stripLigatureMarks,
+  htmlToPlainText,
 } from '@/lib/books/normalize';
+import {
+  normalizeCoverUrl,
+  openLibraryCoverByIsbn,
+  resolveCoverUrl,
+} from '@/lib/books/cover';
+import {
+  formatPublishedDate,
+  buildEditionFacts,
+} from '@/components/book/book-details';
 import {
   scoreBook,
   compareResults,
@@ -531,5 +541,117 @@ describe('book ref — кодирование ссылок', () => {
 
   it('невалидная ссылка → null', () => {
     expect(decodeBookRef('!!!не-base64!!!')).toBeNull();
+  });
+});
+
+describe('htmlToPlainText — описание из Google Books', () => {
+  it('убирает теги, оставляя текст', () => {
+    expect(htmlToPlainText('<p>Роман <b>о</b> Вратах</p>')).toBe('Роман о Вратах');
+  });
+
+  it('переводит абзацы и <br> в переводы строк', () => {
+    const html = '<p>Первый абзац</p><p>Второй абзац</p>';
+    expect(htmlToPlainText(html)).toBe('Первый абзац\n\nВторой абзац');
+  });
+
+  it('раскрывает html-сущности', () => {
+    expect(htmlToPlainText('Кавычки: &quot;да&quot; &amp; &laquo;нет&raquo;')).toBe(
+      'Кавычки: "да" & «нет»',
+    );
+  });
+
+  it('раскрывает числовые сущности', () => {
+    expect(htmlToPlainText('&#1055;ривет')).toBe('Привет');
+  });
+
+  it('не оставляет более одной пустой строки подряд', () => {
+    expect(htmlToPlainText('<p>А</p><br><br><br><p>Б</p>')).toBe('А\n\nБ');
+  });
+
+  it('обычный текст не портит', () => {
+    expect(htmlToPlainText('Просто описание книги.')).toBe('Просто описание книги.');
+  });
+});
+
+describe('обложки', () => {
+  it('http переписывается на https', () => {
+    expect(normalizeCoverUrl('http://books.google.com/books/content?id=A')).toBe(
+      'https://books.google.com/books/content?id=A',
+    );
+  });
+
+  it('загнутый уголок edge=curl убирается', () => {
+    const url = normalizeCoverUrl(
+      'https://books.google.com/books/content?id=A&edge=curl&zoom=1',
+    );
+    expect(url).not.toContain('edge=curl');
+    expect(url).toContain('zoom=1');
+  });
+
+  it('прочие параметры остаются нетронутыми', () => {
+    const url = normalizeCoverUrl(
+      'https://books.google.com/books/content?id=A&printsec=frontcover&img=1',
+    );
+    expect(url).toContain('printsec=frontcover');
+    expect(url).toContain('img=1');
+  });
+
+  it('обложка по ISBN запрашивается с default=false', () => {
+    // Без этого OpenLibrary отдаёт серую заглушку с кодом 200,
+    // и наш плейсхолдер с названием книги не показывается.
+    expect(openLibraryCoverByIsbn('978-5-457-15174-1')).toBe(
+      'https://covers.openlibrary.org/b/isbn/9785457151741-M.jpg?default=false',
+    );
+  });
+
+  it('своя ссылка на обложку имеет приоритет над ISBN', () => {
+    const url = resolveCoverUrl(
+      book({ coverUrl: 'https://example.org/cover.jpg', isbn13: '9785457151741' }),
+    );
+    expect(url).toBe('https://example.org/cover.jpg');
+  });
+
+  it('без обложки, но с ISBN — берём OpenLibrary', () => {
+    const url = resolveCoverUrl(book({ coverUrl: null, isbn13: '9785457151741' }));
+    expect(url).toContain('covers.openlibrary.org');
+  });
+
+  it('без обложки и без ISBN — null, покажем плейсхолдер', () => {
+    expect(resolveCoverUrl(book({ coverUrl: null }))).toBeNull();
+  });
+});
+
+describe('блок «Об издании»', () => {
+  it('полная дата приводится к читаемому виду', () => {
+    expect(formatPublishedDate('2010-07-20')).toBe('20 июля 2010 г.');
+  });
+
+  it('год остаётся годом', () => {
+    expect(formatPublishedDate('2002')).toBe('2002');
+  });
+
+  it('год с месяцем читается словами', () => {
+    expect(formatPublishedDate('2010-07')).toBe('Июля 2010 г.');
+  });
+
+  it('собирает только известные факты', () => {
+    const facts = buildEditionFacts(
+      book({
+        publisher: 'АСТ',
+        publishedDate: '2010',
+        pageCount: 1326,
+        language: 'ru',
+        isbn13: '9785457151741',
+      }),
+    );
+    const labels = facts.map((f) => f.label);
+    expect(labels).toContain('Издательство');
+    expect(labels).toContain('Язык');
+    expect(facts.find((f) => f.label === 'Язык')?.value).toBe('Русский');
+    expect(facts.find((f) => f.label === 'Объем')?.value).toBe('1326 страниц');
+  });
+
+  it('пустая книга не даёт ни одной строки', () => {
+    expect(buildEditionFacts(book({}))).toHaveLength(0);
   });
 });

@@ -14,6 +14,7 @@ import {
 import { searchGoogleBooks } from './google';
 import { searchOpenLibrary } from './openlibrary';
 import { searchLocalCatalog } from './local';
+import { resolveCoverUrl } from './cover';
 import { createSupabaseServerClient } from '@/lib/supabase/server';
 import { isSupabaseConfigured } from '@/lib/supabase/env';
 
@@ -371,6 +372,9 @@ export async function searchBooks(
   const scored: SearchResultBook[] = Array.from(merged.values())
     .map(({ book, sources }) => ({
       ...book,
+      // Обложка выбирается после склейки: у объединённой карточки может
+      // быть ISBN из одного источника и картинка из другого.
+      coverUrl: resolveCoverUrl(book),
       score: isbn ? 1 : scoreBook(book, query, preferredLang),
       sources: Array.from(sources),
     }))

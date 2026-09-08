@@ -23,6 +23,10 @@ export interface NormalizedBook {
   pageCount: number | null;
   /** Год или ISO-дата издания в виде строки. */
   publishedDate: string | null;
+  /** Издательство, если источник его знает. */
+  publisher?: string | null;
+  /** Страница книги в источнике - «посмотреть в Google Books». */
+  sourceUrl?: string | null;
   /** Код языка: 'ru', 'en', … */
   language: string | null;
   genres: string[];

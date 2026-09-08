@@ -160,3 +160,43 @@ export function fuzzyScore(query: string, target: string): number {
   }
   return Number(score.toFixed(4));
 }
+
+/**
+ * Превращает описание с разметкой в чистый текст.
+ *
+ * Google Books отдаёт description с HTML внутри: абзацы, переносы,
+ * выделения, а иногда и целые списки. Мы выводим его как обычный текст,
+ * поэтому теги в аннотации видны читателю как есть - «<p>Роман о...».
+ *
+ * Абзацы и переносы сохраняем как переводы строк: страница книги выводит
+ * описание с whitespace-pre-line, и структура текста не теряется.
+ */
+export function htmlToPlainText(input: string): string {
+  const entities: Record<string, string> = {
+    '&nbsp;': ' ',
+    '&amp;': '&',
+    '&lt;': '<',
+    '&gt;': '>',
+    '&quot;': '"',
+    '&apos;': "'",
+    '&laquo;': '«',
+    '&raquo;': '»',
+    '&mdash;': '-',
+    '&ndash;': '-',
+    '&hellip;': '...',
+  };
+
+  return input
+    .replace(/<br\s*\/?>/gi, '\n')
+    .replace(/<\/(p|div|li|h[1-6])>/gi, '\n\n')
+    .replace(/<li[^>]*>/gi, '- ')
+    .replace(/<[^>]+>/g, '')
+    .replace(/&#(\d+);/g, (_, code: string) =>
+      String.fromCodePoint(Number(code)),
+    )
+    .replace(/&[a-z]+;/gi, (entity) => entities[entity.toLowerCase()] ?? entity)
+    .replace(/[ \t]+/g, ' ')
+    .replace(/ *\n */g, '\n')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim();
+}
