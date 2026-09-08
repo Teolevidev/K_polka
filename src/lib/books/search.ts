@@ -369,7 +369,13 @@ export async function searchBooks(
   // этот урок уже получили.
   const wantsScriptFilter = !options.allScripts && !isbn && preferredLang !== null;
   const onScript = wantsScriptFilter
-    ? scored.filter((b) => titleMatchesQueryScript(b, query))
+    ? scored.filter(
+        // Книги искомого автора остаются всегда, даже если их название
+        // пришло латиницей. Иначе по запросу «Пушкин» отсеются
+        // «Evgeni Onegin» и «The Queen of Spades», а «Шесть статей о
+        // Пушкине» останется - ровно наоборот тому, что нужно.
+        (b) => titleMatchesQueryScript(b, query) || isByQueriedAuthor(b, query),
+      )
     : scored;
   const filteredByScript = wantsScriptFilter && onScript.length > 0;
   const visible = filteredByScript ? onScript : scored;

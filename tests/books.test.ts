@@ -446,6 +446,27 @@ describe('фильтр выдачи по алфавиту', () => {
     expect(out.hiddenByScript).toBe(2);
   });
 
+  it('книги искомого автора остаются, даже если название латиницей', () => {
+    // Живые данные показали: работы Пушкина приходят из OpenLibrary с
+    // романизованными названиями, а книги О Пушкине - из Google с
+    // русскими. Фильтр по алфавиту без этой поблажки оставлял бы
+    // «Шесть статей о Пушкине» и выбрасывал «Evgeni Onegin».
+    const byPushkin = result({
+      title: 'Evgeni Onegin',
+      authors: ['Александр Сергеевич Пушкин'],
+    });
+    const aboutPushkin = result({
+      title: 'Шесть статей о Пушкине',
+      authors: ['Александр Ильич Незеленов'],
+    });
+
+    const kept = [byPushkin, aboutPushkin].filter(
+      (b) => titleMatchesQueryScript(b, 'Пушкин') || isByQueriedAuthor(b, 'Пушкин'),
+    );
+    expect(kept.map((b) => b.title)).toContain('Evgeni Onegin');
+    expect(kept).toHaveLength(2);
+  });
+
   it('если русских названий нет вовсе, показываем всё', () => {
     // Страховка от повторения истории с langRestrict: пустая выдача
     // хуже неидеальной.

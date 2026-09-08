@@ -95,7 +95,16 @@ export async function searchGoogleBooks(
     url.searchParams.set('key', process.env.GOOGLE_BOOKS_API_KEY);
   }
 
-  const res = await fetch(url, { signal, next: { revalidate: 3600 } });
+  let res = await fetch(url, { signal, next: { revalidate: 3600 } });
+
+  // 5xx у Google Books бывают разовыми: наблюдали 503 backendFailed на
+  // запросе, который тут же проходил повторно. Без этой попытки источник
+  // молча выпадает из выдачи, и её целиком тянет OpenLibrary - с
+  // транслитерированными названиями вместо русских.
+  if (res.status >= 500) {
+    res = await fetch(url, { signal, cache: 'no-store' });
+  }
+
   if (!res.ok) {
     throw new Error(`Google Books вернул ${res.status}`);
   }
