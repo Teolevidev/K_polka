@@ -4,7 +4,6 @@ import { SearchX, Plus } from 'lucide-react';
 import { searchBooks } from '@/lib/books/search';
 import { encodeBookRef } from '@/lib/books/ref';
 import { detectQueryKind } from '@/lib/books/isbn';
-import { SearchBar } from '@/components/layout/search-bar';
 import { SearchResultsView } from '@/components/book/search-results-view';
 import { Button } from '@/components/ui/button';
 import { plural } from '@/lib/utils';
@@ -36,10 +35,11 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
 
   return (
     <div className="container space-y-6 py-6">
-      <div className="mx-auto max-w-xl space-y-2">
+      {/* Поле поиска только одно - в шапке. Здесь остаётся подсказка:
+          она стоит сразу под ним и объясняет, что можно вводить. */}
+      <div className="mx-auto max-w-xl space-y-1 text-center">
         <h1 className="text-2xl font-semibold">Поиск книг</h1>
-        <SearchBar initialQuery={query} autoFocus={!hasQuery} />
-        <p className="text-xs text-muted-foreground">
+        <p className="text-sm text-muted-foreground">
           Ищите по названию, автору или ISBN. Поиск понимает опечатки.
         </p>
       </div>

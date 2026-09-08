@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { Suspense } from 'react';
 import { Logo } from './logo';
 import { SearchBar } from './search-bar';
 import { ThemeToggle } from './theme-toggle';
@@ -19,7 +20,9 @@ export async function Header() {
 
         {/* Поиск — на десктопе в шапке */}
         <div className="hidden flex-1 justify-center md:flex">
-          <SearchBar className="max-w-md" />
+          <Suspense fallback={<div className="h-10 w-full max-w-md" />}>
+            <SearchBar className="max-w-md" />
+          </Suspense>
         </div>
 
         <nav className="ml-auto flex items-center gap-1">
@@ -52,7 +55,9 @@ export async function Header() {
 
       {/* Поиск — на мобильном отдельной строкой */}
       <div className="container pb-3 md:hidden">
-        <SearchBar />
+        <Suspense fallback={<div className="h-10 w-full" />}>
+          <SearchBar />
+        </Suspense>
       </div>
     </header>
   );
