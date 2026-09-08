@@ -18,28 +18,31 @@ import type { BookCardData } from '@/components/book/book-card';
 import Link from 'next/link';
 
 export default async function HomePage() {
-  const user = isSupabaseConfigured() ? await getCurrentUser() : null;
+  const configured = isSupabaseConfigured();
+
+  // Подборка, голосовалка и статьи друг от друга не зависят и от того, кто
+  // вошёл, — тоже. Раньше они выполнялись по очереди, и главная ждала сумму
+  // всех обращений к Supabase вместо самого долгого из них.
+  const [user, editorialPicks, poll, articles] = await Promise.all([
+    configured ? getCurrentUser() : Promise.resolve(null),
+    configured ? getCurrentEditorialPicks().catch(() => []) : Promise.resolve([]),
+    configured ? getActivePoll().catch(() => null) : Promise.resolve(null),
+    configured ? getPublishedArticles().catch(() => []) : Promise.resolve([]),
+  ]);
 
   let userName: string | null = null;
   let stats = emptyStats();
-  let adminPicks: BookCardData[] = showcaseSections.adminPicks;
 
   // Маркированные администратором книги — если есть; иначе статичная витрина.
-  if (isSupabaseConfigured()) {
-    try {
-      const live = await getCurrentEditorialPicks();
-      if (live.length > 0) {
-        adminPicks = live.map((p) => ({
+  const adminPicks: BookCardData[] =
+    editorialPicks.length > 0
+      ? editorialPicks.map((p) => ({
           title: p.title,
           authors: p.authors ? p.authors.split(', ').filter(Boolean) : [],
           coverUrl: p.coverUrl,
           href: `/book/${p.bookRef}`,
-        }));
-      }
-    } catch {
-      // fallback на статичную подборку
-    }
-  }
+        }))
+      : showcaseSections.adminPicks;
 
   if (user) {
     const [profile, readingStats] = await Promise.all([
@@ -50,11 +53,6 @@ export default async function HomePage() {
     stats = readingStats;
   }
 
-  // Активная голосовалка и свежие статьи блога
-  const poll = isSupabaseConfigured() ? await getActivePoll().catch(() => null) : null;
-  const articles = isSupabaseConfigured()
-    ? await getPublishedArticles().catch(() => [])
-    : [];
   const latestArticles = articles.slice(0, 3);
   const quote = randomQuote();
 
