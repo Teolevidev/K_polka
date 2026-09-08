@@ -128,9 +128,12 @@ async function probeOpenLibrary(query: string): Promise<SourceReport> {
 export async function GET(req: NextRequest) {
   const query = req.nextUrl.searchParams.get('q')?.trim() || 'Пушкин';
 
-  const [googleNoLang, googleRu, openlibrary] = await Promise.all([
+  const [googleNoLang, googleRu, googleInAuthor, openlibrary] = await Promise.all([
     probeGoogle(query, null),
     probeGoogle(query, 'ru'),
+    // Google понимает операторы по полям. Проверяем догадку: не даст ли
+    // inauthor: книги САМОГО автора вместо книг о нём.
+    probeGoogle(`inauthor:"${query}"`, null),
     probeOpenLibrary(query),
   ]);
 
@@ -140,12 +143,14 @@ export async function GET(req: NextRequest) {
       ключGoogleЗадан: Boolean(process.env.GOOGLE_BOOKS_API_KEY),
       google_безФильтраЯзыка: googleNoLang,
       google_langRestrict_ru: googleRu,
+      google_inauthor: googleInAuthor,
       openlibrary,
       какЧитать: [
         'Если google_безФильтраЯзыка.ok = false со статусом 429 — исчерпана квота, нужен ключ.',
         'Если ok = true и в languages много ru — Google отвечает, и русские издания есть.',
         'Если openlibrary отдаёт названия латиницей — это транслитерация ALA-LC, ожидаемо.',
         'Сравните returned у обоих источников: кто реально наполняет выдачу.',
+        'google_inauthor — главная проверка: если там книги САМОГО автора, а не о нём, значит нужен оператор inauthor.',
       ],
     },
     { headers: { 'Cache-Control': 'no-store' } },

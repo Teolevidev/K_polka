@@ -13,6 +13,9 @@ import {
 } from './normalize';
 import { searchGoogleBooks } from './google';
 import { searchOpenLibrary } from './openlibrary';
+import { searchLocalCatalog } from './local';
+import { createSupabaseServerClient } from '@/lib/supabase/server';
+import { isSupabaseConfigured } from '@/lib/supabase/env';
 
 /**
  * Федеративный поиск книг.
@@ -326,6 +329,14 @@ export async function searchBooks(
     runSource('openlibrary', (signal) =>
       searchOpenLibrary(query, { isbn, signal, limit: 30 }),
     ),
+    // Свой каталог: книги, заведённые вручную, и те, что уже клали на
+    // полки. По русским авторам он точнее внешних источников и не
+    // зависит от их доступности.
+    runSource('local', async () => {
+      if (!isSupabaseConfigured()) return [];
+      const supabase = await createSupabaseServerClient();
+      return searchLocalCatalog(supabase, query, { isbn, limit: 30 });
+    }),
   ]);
 
   const respondedSources: BookSource[] = [];
@@ -337,6 +348,12 @@ export async function searchBooks(
   // Группировка по произведению. Индекс строим по всем ответам сразу,
   // чтобы издания Google подтянулись к произведениям OpenLibrary.
   const allBooks = sourceResults.flatMap((r) => r.books);
+
+  // Свои книги идут первыми: при склейке карточка сохранит ссылку на наш
+  // каталог, и страница откроется даже когда внешний источник лежит.
+  const localFirst = (b: NormalizedBook) => (b.source === 'local' ? 0 : 1);
+  allBooks.sort((a, b) => localFirst(a) - localFirst(b));
+
   const workIndex = buildWorkIndex(allBooks);
 
   const merged = new Map<string, { book: NormalizedBook; sources: Set<BookSource> }>();

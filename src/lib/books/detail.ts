@@ -1,6 +1,9 @@
 import type { NormalizedBook } from './types';
 import type { BookRef } from './ref';
 import { cleanIsbn } from './isbn';
+import { getLocalBookById } from './local';
+import { createSupabaseServerClient } from '@/lib/supabase/server';
+import { isSupabaseConfigured } from '@/lib/supabase/env';
 
 /**
  * Получение одной книги по ссылке источника — для страницы книги.
@@ -181,6 +184,13 @@ export async function getBookByRef(ref: BookRef): Promise<NormalizedBook | null>
         return await getGoogleBook(ref.sourceId);
       case 'openlibrary':
         return await getOpenLibraryBook(ref.sourceId);
+      case 'local': {
+        // Книга из нашего каталога: заведена вручную или сохранена,
+        // когда кто-то положил её на полку.
+        if (!isSupabaseConfigured()) return null;
+        const supabase = await createSupabaseServerClient();
+        return await getLocalBookById(supabase, ref.sourceId);
+      }
       default:
         return null;
     }
