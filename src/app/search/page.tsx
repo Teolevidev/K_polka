@@ -60,7 +60,7 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
             </p>
           </div>
           <Button variant="outline" asChild>
-            <Link href="/book/new">
+            <Link href={`/book/new?q=${encodeURIComponent(query)}`}>
               <Plus className="size-4" />
               Добавить вручную
             </Link>
