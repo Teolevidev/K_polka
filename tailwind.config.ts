@@ -7,7 +7,9 @@ const config: Config = {
     container: {
       center: true,
       padding: '1rem',
-      screens: { '2xl': '1280px' },
+      // 1200px - ширина контента опорного стиля. Ленты уходят за нее
+      // в края экрана, содержимое остается внутри.
+      screens: { '2xl': '1200px' },
     },
     extend: {
       colors: {
@@ -44,11 +46,33 @@ const config: Config = {
           DEFAULT: 'hsl(var(--popover))',
           foreground: 'hsl(var(--popover-foreground))',
         },
+        // Фирменные цвета лент. Зеленый и голубой - только фоны:
+        // заливкой кнопок они не бывают никогда.
+        forest: 'hsl(var(--brand-forest))',
+        sky: 'hsl(var(--brand-sky))',
+        cream: 'hsl(var(--brand-cream))',
+        ink: 'hsl(var(--brand-ink))',
+        plum: 'hsl(var(--brand-plum))',
+        graphite: 'hsl(var(--brand-graphite))',
+        char: 'hsl(var(--brand-char))',
+        fog: 'hsl(var(--brand-fog))',
       },
       borderRadius: {
         lg: 'var(--radius)',
         md: 'calc(var(--radius) - 2px)',
         sm: 'calc(var(--radius) - 4px)',
+        // Кнопка-таблетка: 60px по всей системе, без исключений.
+        pill: '60px',
+        // Крупные карточки-подложки под макеты и превью.
+        card: '48px',
+      },
+      boxShadow: {
+        pill: '0 4px 20px 0 rgba(0, 0, 0, 0.18)',
+        lift: '0 4px 20px 0 rgba(0, 0, 0, 0.14)',
+        cover: '0 2px 8px 0 rgba(0, 0, 0, 0.2)',
+      },
+      letterSpacing: {
+        tightest: '-0.03em',
       },
       fontFamily: {
         serif: ['var(--font-serif)', 'Georgia', 'serif'],

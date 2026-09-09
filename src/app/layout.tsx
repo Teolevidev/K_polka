@@ -4,6 +4,7 @@ import { getLocale, getMessages } from 'next-intl/server';
 import { Providers } from '@/components/layout/providers';
 import { Header } from '@/components/layout/header';
 import { BottomNav } from '@/components/layout/bottom-nav';
+import { Footer } from '@/components/layout/footer';
 import { BackButton } from '@/components/layout/back-button';
 // Самохостинг шрифтов (без внешних запросов к Google Fonts):
 // надёжнее, быстрее и корректно работает для российской аудитории.
@@ -24,8 +25,8 @@ export const metadata: Metadata = {
 
 export const viewport: Viewport = {
   themeColor: [
-    { media: '(prefers-color-scheme: light)', color: '#FBFAF8' },
-    { media: '(prefers-color-scheme: dark)', color: '#1C1A17' },
+    { media: '(prefers-color-scheme: light)', color: '#ffffff' },
+    { media: '(prefers-color-scheme: dark)', color: '#0b090b' },
   ],
   width: 'device-width',
   initialScale: 1,
@@ -47,7 +48,9 @@ export default async function RootLayout({
             <div className="flex min-h-dvh flex-col">
               <Header />
               <BackButton />
-              <main className="flex-1 pb-20 md:pb-10">{children}</main>
+              <main className="flex-1">{children}</main>
+              <Footer />
+              <div className="pb-20 md:pb-0" />
               <BottomNav />
             </div>
           </Providers>

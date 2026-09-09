@@ -24,7 +24,9 @@ export function BookCard({ book, className }: BookCardProps) {
     <Link
       href={book.href}
       className={cn(
-        'group flex flex-col gap-2 rounded-lg p-2 transition-colors hover:bg-secondary/60',
+        // Без карточной рамки и подложки: обложка сама себе карточка,
+        // а на наведении слегка подрастает.
+        'group flex flex-col gap-2',
         className,
       )}
     >
@@ -32,7 +34,7 @@ export function BookCard({ book, className }: BookCardProps) {
         <BookCover
           src={book.coverUrl}
           title={book.title}
-          className="transition-transform group-hover:-translate-y-0.5"
+          className="transition-transform duration-200 group-hover:-translate-y-1"
         />
         {book.rank !== undefined && (
           <span

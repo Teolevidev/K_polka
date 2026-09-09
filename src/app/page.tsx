@@ -4,6 +4,7 @@ import { BookRow } from '@/components/home/book-row';
 import { QuoteCard } from '@/components/home/quote-card';
 import { RecommendationBlock } from '@/components/home/recommendation-block';
 import { PollWidget } from '@/components/polls/poll-widget';
+import { SectionBand, type BandTone } from '@/components/layout/section-band';
 import { randomQuote } from '@/lib/quotes/data';
 import { showcaseSections } from '@/lib/books/showcase';
 import { isSupabaseConfigured } from '@/lib/supabase/env';
@@ -56,58 +57,30 @@ export default async function HomePage() {
   const latestArticles = articles.slice(0, 3);
   const quote = randomQuote();
 
-  return (
-    <div className="space-y-10 pb-8 pt-2">
-      {/* Гостям — маркетинговый экран; участникам сразу персональный блок */}
-      {!userName && <HomeHero />}
+  /**
+   * Ритм лент. Порядок цветов задан циклом, а не расставлен руками:
+   * блоков на главной то больше, то меньше (гость или участник, есть
+   * статьи или нет), и при ручной раскраске две ленты одного цвета
+   * рано или поздно оказываются рядом. В цикле соседних повторов нет,
+   * в том числе на стыке конца и начала.
+   */
+  const TONE_CYCLE: BandTone[] = ['forest', 'cream', 'sky', 'cream', 'white', 'cream'];
 
-      {/* Персональный блок — максимально высоко, личные мотиваторы */}
-      <HomeMemberBlock userName={userName} stats={stats} />
+  const blocks: { key: string; node: React.ReactNode }[] = [];
 
-      <QuoteCard quote={quote} />
+  // Гостям - брендовый экран, участникам сразу личный блок.
+  blocks.push(
+    userName
+      ? {
+          key: 'member',
+          node: <HomeMemberBlock userName={userName} stats={stats} />,
+        }
+      : { key: 'hero', node: null },
+  );
 
-      <RecommendationBlock isSignedIn={Boolean(user)} />
-
-      {poll && <PollWidget poll={poll} isSignedIn={Boolean(user)} />}
-
-      {latestArticles.length > 0 && (
-        <section className="container space-y-3">
-          <div className="flex items-end justify-between gap-4">
-            <div>
-              <h2 className="text-xl font-semibold sm:text-2xl">Блог</h2>
-              <p className="mt-0.5 text-sm text-muted-foreground">
-                Колонки редактора и обзоры
-              </p>
-            </div>
-            <Link
-              href="/blog"
-              className="text-sm font-medium text-primary hover:underline"
-            >
-              Все статьи →
-            </Link>
-          </div>
-          <div className="grid gap-3 sm:grid-cols-3">
-            {latestArticles.map((a) => (
-              <Link
-                key={a.id}
-                href={`/blog/${a.slug}`}
-                className="rounded-lg border border-border bg-card p-4 transition-colors hover:border-primary/40"
-              >
-                <span className="text-xs uppercase tracking-wide text-muted-foreground">
-                  {a.kind === 'editorial' ? 'Колонка' : a.kind === 'review' ? 'Обзор' : 'Заметка'}
-                </span>
-                <h3 className="mt-1 font-semibold leading-tight">{a.title}</h3>
-                {a.excerpt && (
-                  <p className="mt-1 line-clamp-3 text-sm text-muted-foreground">
-                    {a.excerpt}
-                  </p>
-                )}
-              </Link>
-            ))}
-          </div>
-        </section>
-      )}
-
+  blocks.push({
+    key: 'popular',
+    node: (
       <BookRow
         title="Популярное сейчас"
         subtitle="Что читают в «Книжной полке» на этой неделе"
@@ -115,13 +88,95 @@ export default async function HomePage() {
         showAllHref="/discover"
         ranked
       />
+    ),
+  });
 
+  blocks.push({ key: 'quote', node: <QuoteCard quote={quote} /> });
+
+  if (!userName) {
+    blocks.push({
+      key: 'invite',
+      node: <HomeMemberBlock userName={userName} stats={stats} />,
+    });
+  }
+
+  blocks.push({
+    key: 'recommend',
+    node: (
+      <div className="space-y-10">
+        <RecommendationBlock isSignedIn={Boolean(user)} />
+        {poll && <PollWidget poll={poll} isSignedIn={Boolean(user)} />}
+      </div>
+    ),
+  });
+
+  if (latestArticles.length > 0) {
+    blocks.push({
+      key: 'blog',
+      node: (
+        <div className="space-y-6">
+          <div className="flex items-end justify-between gap-4">
+            <div className="space-y-1">
+              <h2 className="font-serif text-2xl leading-tight sm:text-3xl">Блог</h2>
+              <p className="text-sm opacity-70">Колонки редактора и обзоры</p>
+            </div>
+            <Link
+              href="/blog"
+              className="shrink-0 text-sm font-medium underline underline-offset-4 hover:no-underline"
+            >
+              Все статьи
+            </Link>
+          </div>
+          <div className="grid gap-4 sm:grid-cols-3">
+            {latestArticles.map((a) => (
+              <Link
+                key={a.id}
+                href={`/blog/${a.slug}`}
+                className="rounded-lg bg-secondary p-5 transition-colors hover:bg-secondary/70"
+              >
+                <span className="text-xs uppercase tracking-widest opacity-60">
+                  {a.kind === 'editorial'
+                    ? 'Колонка'
+                    : a.kind === 'review'
+                      ? 'Обзор'
+                      : 'Заметка'}
+                </span>
+                <h3 className="mt-2 font-serif text-lg leading-snug">{a.title}</h3>
+                {a.excerpt && (
+                  <p className="mt-2 line-clamp-3 text-sm opacity-70">{a.excerpt}</p>
+                )}
+              </Link>
+            ))}
+          </div>
+        </div>
+      ),
+    });
+  }
+
+  blocks.push({
+    key: 'picks',
+    node: (
       <BookRow
         title="Выбор администратора этой недели"
         subtitle="Пять книг, которые советует команда «Книжной полки»"
         books={adminPicks}
         showAllHref="/discover"
       />
+    ),
+  });
+
+  return (
+    <div>
+      {blocks.map(({ key, node }, i) =>
+        // Герой сам себе лента: у него своя двухколоночная разметка.
+        node === null ? (
+          <HomeHero key={key} />
+        ) : (
+          <SectionBand key={key} tone={TONE_CYCLE[i % TONE_CYCLE.length]}>
+            {node}
+          </SectionBand>
+        ),
+      )}
     </div>
   );
 }

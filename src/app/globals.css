@@ -3,75 +3,110 @@
 @tailwind utilities;
 
 /* ============================================================
-   Книжная полка — дизайн-система
-   Тёплая «читательская» палитра. Светлая и тёмная темы.
+   Книжная полка - дизайн-система
+
+   Опорный стиль: литературный «читательский уголок» - кремовая
+   бумага и чернила, книга как главный арт-объект. Типографика -
+   самый громкий голос: крупные теплые серифные заголовки с плотной
+   интерлиньяжем, Inter с отрицательным трекингом во всей утилитарной
+   части, кнопки-таблетки радиусом 60px и полноширинные цветные ленты
+   вместо рамок и разделителей.
    ============================================================ */
 
 @layer base {
   :root {
-    /* Шрифты (самохостинг через @fontsource) */
+    /* Шрифты (самохостинг через @fontsource).
+       Lora - подстановка вместо Heldane Display: тот же литературный
+       характер при near-regular начертании. */
     --font-sans: 'Inter Variable', system-ui, -apple-system, sans-serif;
     --font-serif: 'Lora Variable', Georgia, 'Times New Roman', serif;
 
-    --background: 40 33% 98%;
-    --foreground: 30 10% 15%;
+    /* --- Фирменная палитра ---------------------------------------
+       Полосы-секции - главный структурный прием: страница собирается
+       из полноширинных цветных лент, а не из рамок и разделителей.
+       Зеленый и голубой - только фоны, никогда не заливка кнопок. */
+    --brand-forest: 162 85% 16%; /* #064c37 */
+    --brand-sky: 202 65% 55%; /* #43a1d7 */
+    --brand-cream: 40 36% 95%; /* #f7f4ee */
+    --brand-ink: 310 16% 7%; /* #161015 */
+    --brand-plum: 300 9% 15%; /* #292229 */
+    --brand-graphite: 317 6% 23%; /* #3f383d */
+    --brand-char: 300 8% 4%; /* #070607 */
+    --brand-fog: 0 0% 93%; /* #ededed */
 
-    --card: 0 0% 100%;
-    --card-foreground: 30 10% 15%;
+    /* --- Семантические токены светлой темы ------------------------ */
+    --background: 0 0% 100%;
+    --foreground: var(--brand-ink);
+
+    --card: var(--brand-cream);
+    --card-foreground: var(--brand-ink);
 
     --popover: 0 0% 100%;
-    --popover-foreground: 30 10% 15%;
+    --popover-foreground: var(--brand-ink);
 
-    --primary: 12 55% 38%;
-    --primary-foreground: 40 33% 98%;
+    /* Действия всегда темные или белые - хроматических кнопок нет. */
+    --primary: var(--brand-plum);
+    --primary-foreground: 0 0% 100%;
 
-    --secondary: 38 30% 92%;
-    --secondary-foreground: 30 10% 20%;
+    --secondary: var(--brand-cream);
+    --secondary-foreground: var(--brand-ink);
 
-    --muted: 38 24% 93%;
-    --muted-foreground: 30 8% 42%;
+    --muted: var(--brand-fog);
+    --muted-foreground: 317 5% 42%;
 
-    --accent: 40 60% 50%;
-    --accent-foreground: 30 20% 12%;
+    /* Голубой - декоративный акцент: звезды рейтинга, подсветка. */
+    --accent: var(--brand-sky);
+    --accent-foreground: var(--brand-ink);
 
     --destructive: 0 65% 45%;
     --destructive-foreground: 0 0% 98%;
 
-    --border: 36 18% 86%;
-    --input: 36 18% 86%;
-    --ring: 12 55% 38%;
+    --border: 40 20% 89%;
+    --input: 40 20% 87%;
+    --ring: var(--brand-plum);
 
-    --radius: 0.625rem;
+    --radius: 0.75rem;
   }
 
   .dark {
-    --background: 30 8% 10%;
-    --foreground: 38 20% 90%;
+    --brand-forest: 162 60% 22%;
+    --brand-sky: 202 55% 48%;
+    --brand-cream: 40 14% 90%;
+    --brand-ink: 40 20% 95%;
+    --brand-plum: 300 7% 13%;
+    --brand-graphite: 40 8% 70%;
+    --brand-char: 300 8% 4%;
+    --brand-fog: 300 6% 16%;
 
-    --card: 30 8% 13%;
-    --card-foreground: 38 20% 90%;
+    --background: 300 8% 6%;
+    --foreground: 40 20% 95%;
 
-    --popover: 30 8% 13%;
-    --popover-foreground: 38 20% 90%;
+    --card: 300 7% 11%;
+    --card-foreground: 40 20% 95%;
 
-    --primary: 12 60% 55%;
-    --primary-foreground: 30 10% 10%;
+    --popover: 300 7% 11%;
+    --popover-foreground: 40 20% 95%;
 
-    --secondary: 30 7% 20%;
-    --secondary-foreground: 38 20% 90%;
+    /* На темном фоне первичная кнопка светлая - это та же белая
+       «таблетка», что на цветных лентах. */
+    --primary: 40 14% 92%;
+    --primary-foreground: 310 16% 7%;
 
-    --muted: 30 7% 18%;
-    --muted-foreground: 38 10% 60%;
+    --secondary: 300 6% 16%;
+    --secondary-foreground: 40 20% 95%;
 
-    --accent: 40 65% 58%;
-    --accent-foreground: 30 15% 10%;
+    --muted: 300 6% 15%;
+    --muted-foreground: 40 8% 64%;
+
+    --accent: 202 55% 52%;
+    --accent-foreground: 310 16% 7%;
 
     --destructive: 0 60% 50%;
     --destructive-foreground: 0 0% 98%;
 
-    --border: 30 7% 22%;
-    --input: 30 7% 22%;
-    --ring: 12 60% 55%;
+    --border: 300 6% 19%;
+    --input: 300 6% 21%;
+    --ring: 40 14% 92%;
   }
 }
 
@@ -82,17 +117,45 @@
 
   body {
     @apply bg-background text-foreground antialiased;
+    /* ss01 и cv11 - фирменные альтернативы Inter из опорного стиля.
+       Отрицательный трекинг обязателен: с дефолтным Inter редакционный
+       характер рассыпается. */
     font-feature-settings:
       'rlig' 1,
-      'calt' 1;
+      'calt' 1,
+      'ss01' 1,
+      'cv11' 1;
+    letter-spacing: -0.02em;
   }
 
+  /* Заголовки - серифные, near-regular. Полужирного в дисплейных
+     размерах быть не должно: вес 400 и есть подпись стиля. */
   h1,
   h2,
   h3,
   h4 {
     @apply font-serif;
+    font-weight: 400;
+    letter-spacing: -0.01em;
     text-wrap: balance;
+  }
+
+  h1 {
+    line-height: 0.94;
+  }
+}
+
+@layer components {
+  /* Полноширинная лента-секция: цвет уходит в края экрана, содержимое
+     держится внутри 1200px. Цвет и есть разделитель - рамок не ставим. */
+  .band {
+    @apply w-full;
+    padding-block: clamp(2.5rem, 6vw, 5rem);
+  }
+
+  .band-inner {
+    @apply mx-auto w-full px-4 sm:px-6;
+    max-width: 1200px;
   }
 }
 
@@ -123,5 +186,19 @@
     -webkit-line-clamp: 3;
     -webkit-box-orient: vertical;
     overflow: hidden;
+  }
+
+  /* Дисплейный заголовок: чем крупнее, тем плотнее строки - как в
+     печатной верстке, где строки «слипаются» в блок. */
+  .text-display {
+    font-size: clamp(2.5rem, 7vw, 4.5rem);
+    line-height: 0.9;
+    letter-spacing: -0.015em;
+  }
+
+  .text-display-sm {
+    font-size: clamp(1.75rem, 4.5vw, 3rem);
+    line-height: 0.98;
+    letter-spacing: -0.012em;
   }
 }
