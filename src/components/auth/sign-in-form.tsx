@@ -47,11 +47,24 @@ export function SignInForm({ next = '/profile', appleEnabled = false }: SignInFo
 
   async function onOAuth(provider: 'google' | 'apple') {
     if (!configured) return;
-    const supabase = createSupabaseBrowserClient();
-    await supabase.auth.signInWithOAuth({
-      provider,
-      options: { redirectTo: `${window.location.origin}${callbackUrl}` },
-    });
+    setStatus('sending');
+    setMessage('');
+    try {
+      const supabase = createSupabaseBrowserClient();
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider,
+        options: { redirectTo: `${window.location.origin}${callbackUrl}` },
+      });
+      // Если провайдер не включен в Supabase, signInWithOAuth возвращает
+      // ошибку и никуда не уводит. Без этой ветки кнопка выглядела
+      // сломанной: нажимаешь - и ничего не происходит.
+      if (error) throw error;
+    } catch {
+      setStatus('error');
+      setMessage(
+        `Вход через ${provider === 'google' ? 'Google' : 'Apple'} сейчас недоступен. Войдите по ссылке на почту.`,
+      );
+    }
   }
 
   if (!configured) {
@@ -114,10 +127,13 @@ export function SignInForm({ next = '/profile', appleEnabled = false }: SignInFo
           )}
           Получить ссылку для входа
         </Button>
-        {status === 'error' && (
-          <p className="text-sm text-destructive">{message}</p>
-        )}
       </form>
+
+      {status === 'error' && (
+        <p role="alert" className="text-sm text-destructive">
+          {message}
+        </p>
+      )}
 
       <div className="flex items-center gap-3">
         <span className="h-px flex-1 bg-border" />
@@ -126,11 +142,21 @@ export function SignInForm({ next = '/profile', appleEnabled = false }: SignInFo
       </div>
 
       <div className="space-y-2">
-        <Button variant="outline" className="w-full" onClick={() => onOAuth('google')}>
+        <Button
+          variant="outline"
+          className="w-full"
+          disabled={status === 'sending'}
+          onClick={() => onOAuth('google')}
+        >
           Google
         </Button>
         {appleEnabled && (
-          <Button variant="outline" className="w-full" onClick={() => onOAuth('apple')}>
+          <Button
+            variant="outline"
+            className="w-full"
+            disabled={status === 'sending'}
+            onClick={() => onOAuth('apple')}
+          >
             Apple
           </Button>
         )}
