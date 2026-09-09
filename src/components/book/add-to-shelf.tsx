@@ -2,7 +2,14 @@
 
 import { useRouter } from 'next/navigation';
 import { useState, useTransition } from 'react';
-import { BookmarkPlus, BookOpen, Check, ChevronDown, Loader2 } from 'lucide-react';
+import {
+  BookmarkPlus,
+  BookOpen,
+  BookX,
+  Check,
+  ChevronDown,
+  Loader2,
+} from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { addBookToShelf, type ShelfStatus } from '@/lib/shelf/actions';
@@ -11,6 +18,7 @@ const SHELVES: { status: ShelfStatus; label: string; icon: typeof BookOpen }[] =
   { status: 'want', label: 'Хочу прочесть', icon: BookmarkPlus },
   { status: 'reading', label: 'Читаю сейчас', icon: BookOpen },
   { status: 'read', label: 'Прочитано', icon: Check },
+  { status: 'dropped', label: 'Не буду читать', icon: BookX },
 ];
 
 interface AddToShelfProps {

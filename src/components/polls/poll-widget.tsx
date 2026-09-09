@@ -5,6 +5,7 @@ import { useState, useTransition } from 'react';
 import Link from 'next/link';
 import { Vote, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { HomeTile } from '@/components/home/home-tile';
 import { cn, plural } from '@/lib/utils';
 import { vote, type PollData } from '@/lib/polls';
 
@@ -44,15 +45,8 @@ export function PollWidget({ poll, isSignedIn }: PollWidgetProps) {
   }
 
   return (
-    <section>
-      <div className="rounded-lg bg-background text-foreground p-5 shadow-lift">
-        <div className="mb-3 flex items-center gap-2">
-          <Vote className="size-5 text-primary" aria-hidden="true" />
-          <h2 className="font-serif text-lg font-semibold sm:text-xl">
-            {poll.question}
-          </h2>
-        </div>
-
+    <HomeTile icon={Vote} title={poll.question}>
+      <div className="flex flex-1 flex-col">
         <ul className="space-y-2">
           {poll.options.map((opt) => {
             const pct = total > 0 ? Math.round((opt.votes / total) * 100) : 0;
@@ -99,7 +93,7 @@ export function PollWidget({ poll, isSignedIn }: PollWidgetProps) {
           })}
         </ul>
 
-        <p className="mt-3 text-xs text-muted-foreground">
+        <p className="mt-auto pt-3 text-xs text-muted-foreground">
           {total} {plural(total, 'голос', 'голоса', 'голосов')}
           {poll.status === 'closed' && ' · голосование закрыто'}
           {!isSignedIn && poll.status === 'open' && (
@@ -114,6 +108,6 @@ export function PollWidget({ poll, isSignedIn }: PollWidgetProps) {
         </p>
         {error && <p className="mt-1 text-sm text-destructive">{error}</p>}
       </div>
-    </section>
+    </HomeTile>
   );
 }
