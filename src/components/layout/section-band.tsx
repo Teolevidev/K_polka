@@ -1,5 +1,5 @@
 import { cn } from '@/lib/utils';
-import { ILLUSTRATION } from './illustration';
+import { LeafPattern } from './leaf-pattern';
 
 /**
  * Полноширинная лента-секция - главный структурный прием системы.
@@ -11,12 +11,21 @@ import { ILLUSTRATION } from './illustration';
  */
 export type BandTone = 'forest' | 'sky' | 'cream' | 'white' | 'char';
 
+/**
+ * Цвет ленты и текста на ней.
+ *
+ * Цветные ленты берут фирменные цвета напрямую: они одинаковы в обеих
+ * темах, и текст на них подобран под конкретный фон. А кремовая - это
+ * роль «светлая поверхность», а не конкретный цвет: ночью кремовая
+ * плашка во весь экран слепит, поэтому она идет через семантический
+ * токен и темнеет вместе со страницей.
+ */
 const TONES: Record<BandTone, string> = {
-  forest: 'bg-forest text-white',
+  forest: 'bg-forest text-cream',
   sky: 'bg-sky text-ink',
-  cream: 'bg-cream text-ink',
+  cream: 'bg-secondary text-secondary-foreground',
   white: 'bg-background text-foreground',
-  char: 'bg-char text-white',
+  char: 'bg-char text-cream',
 };
 
 interface SectionBandProps {
@@ -45,13 +54,11 @@ export function SectionBand({
       {patterned && (
         <div
           aria-hidden="true"
-          className="pointer-events-none absolute inset-0 -z-10 bg-repeat"
-          style={{
-            backgroundImage: `url(${ILLUSTRATION})`,
-            backgroundSize: '320px auto',
-            opacity: 'var(--pattern-opacity)',
-          }}
-        />
+          className="pointer-events-none absolute inset-0 -z-10 overflow-hidden text-cream"
+          style={{ opacity: 'var(--pattern-opacity)' }}
+        >
+          <LeafPattern className="h-full w-full" />
+        </div>
       )}
       {bleed ? children : <div className="band-inner">{children}</div>}
     </section>

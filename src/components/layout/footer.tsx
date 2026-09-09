@@ -29,7 +29,7 @@ const COLUMNS = [
 
 export function Footer() {
   return (
-    <footer className="band bg-char text-white">
+    <footer className="band bg-char text-cream">
       <div className="band-inner">
         <div className="grid gap-10 sm:grid-cols-[1.5fr_1fr_1fr]">
           <div className="space-y-4">

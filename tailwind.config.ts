@@ -56,6 +56,7 @@ const config: Config = {
         graphite: 'hsl(var(--brand-graphite))',
         char: 'hsl(var(--brand-char))',
         fog: 'hsl(var(--brand-fog))',
+        orange: 'hsl(var(--brand-orange))',
       },
       borderRadius: {
         lg: 'var(--radius)',
