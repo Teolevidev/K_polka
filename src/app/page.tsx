@@ -4,8 +4,7 @@ import { BookRow } from '@/components/home/book-row';
 import { QuoteCard } from '@/components/home/quote-card';
 import { RecommendationBlock } from '@/components/home/recommendation-block';
 import { PollWidget } from '@/components/polls/poll-widget';
-import { SectionBand, type BandTone } from '@/components/layout/section-band';
-import { Illustration } from '@/components/layout/illustration';
+
 import { randomQuote } from '@/lib/quotes/data';
 import { showcaseSections } from '@/lib/books/showcase';
 import { isSupabaseConfigured } from '@/lib/supabase/env';
@@ -59,37 +58,19 @@ export default async function HomePage() {
   const latestArticles = articles.slice(0, 3);
   const quote = randomQuote();
 
-  /**
-   * Ритм лент. Порядок цветов задан циклом, а не расставлен руками:
-   * блоков на главной то больше, то меньше (гость или участник, есть
-   * статьи или нет), и при ручной раскраске две ленты одного цвета
-   * рано или поздно оказываются рядом. В цикле соседних повторов нет,
-   * в том числе на стыке конца и начала.
-   */
-  const TONE_CYCLE: BandTone[] = ['forest', 'cream', 'sky', 'cream', 'white', 'cream'];
+  return (
+    /*
+     * Одна полноширинная лента - герой, дальше страница собирается
+     * внутри колонки. Сплошные цветные полосы во весь экран одна за
+     * другой читались как набор баннеров: глазу не за что зацепиться и
+     * непонятно, где кончается один блок и начинается другой. Теперь
+     * цвет во всю ширину - редкий акцент, а не структура.
+     */
+    <div>
+      {!userName && <HomeHero />}
 
-  const blocks: { key: string; node: React.ReactNode }[] = [];
-
-  // Гостям - брендовый экран, участникам сразу личный блок.
-  blocks.push(
-    userName
-      ? {
-          key: 'member',
-          node: <HomeMemberBlock userName={userName} stats={stats} />,
-        }
-      : { key: 'hero', node: null },
-  );
-
-  blocks.push({
-    key: 'popular',
-    node: (
-      <div className="space-y-8">
-        {/* Иллюстрация открывает ленту - крупно и по центру, над первой
-            каруселью. Декоративная, поэтому без подписи для читалки. */}
-        <Illustration
-          className="mx-auto max-w-lg"
-          sizes="(min-width: 640px) 512px, 100vw"
-        />
+      <div className="container max-w-[1200px] space-y-14 py-12 sm:space-y-16">
+        {userName && <HomeMemberBlock userName={userName} stats={stats} />}
 
         <BookRow
           title="Популярное сейчас"
@@ -98,103 +79,67 @@ export default async function HomePage() {
           showAllHref="/discover"
           ranked
         />
-      </div>
-    ),
-  });
 
-  // Рекомендация и опрос - парой сразу под первой каруселью: это два
-  // коротких действия, и в одну колонку они растягивали главную вдвое.
-  blocks.push({
-    key: 'tiles',
-    node: (
-      <div
-        className={cn(
-          'grid gap-4',
-          poll ? 'sm:grid-cols-2' : 'sm:max-w-xl',
-        )}
-      >
-        <RecommendationBlock isSignedIn={Boolean(user)} />
-        {poll && <PollWidget poll={poll} isSignedIn={Boolean(user)} />}
-      </div>
-    ),
-  });
-
-  blocks.push({ key: 'quote', node: <QuoteCard quote={quote} /> });
-
-  if (!userName) {
-    blocks.push({
-      key: 'invite',
-      node: <HomeMemberBlock userName={userName} stats={stats} />,
-    });
-  }
-
-  if (latestArticles.length > 0) {
-    blocks.push({
-      key: 'blog',
-      node: (
-        <div className="space-y-6">
-          <div className="flex items-end justify-between gap-4">
-            <div className="space-y-1">
-              <h2 className="font-serif text-2xl leading-tight sm:text-3xl">Блог</h2>
-              <p className="text-sm opacity-70">Колонки редактора и обзоры</p>
-            </div>
-            <Link
-              href="/blog"
-              className="shrink-0 text-sm font-medium underline underline-offset-4 hover:no-underline"
-            >
-              Все статьи
-            </Link>
-          </div>
-          <div className="grid gap-4 sm:grid-cols-3">
-            {latestArticles.map((a) => (
-              <Link
-                key={a.id}
-                href={`/blog/${a.slug}`}
-                className="rounded-lg bg-secondary p-5 transition-colors hover:bg-secondary/70"
-              >
-                <span className="text-xs uppercase tracking-widest opacity-60">
-                  {a.kind === 'editorial'
-                    ? 'Колонка'
-                    : a.kind === 'review'
-                      ? 'Обзор'
-                      : 'Заметка'}
-                </span>
-                <h3 className="mt-2 font-serif text-lg leading-snug">{a.title}</h3>
-                {a.excerpt && (
-                  <p className="mt-2 line-clamp-3 text-sm opacity-70">{a.excerpt}</p>
-                )}
-              </Link>
-            ))}
-          </div>
+        {/* Рекомендация и опрос - парой: это два коротких действия, и в
+            одну колонку они растягивали главную вдвое. */}
+        <div className={cn('grid gap-4', poll ? 'sm:grid-cols-2' : 'sm:max-w-xl')}>
+          <RecommendationBlock isSignedIn={Boolean(user)} />
+          {poll && <PollWidget poll={poll} isSignedIn={Boolean(user)} />}
         </div>
-      ),
-    });
-  }
 
-  blocks.push({
-    key: 'picks',
-    node: (
-      <BookRow
-        title="Выбор администратора этой недели"
-        subtitle="Пять книг, которые советует команда «Книжной полки»"
-        books={adminPicks}
-        showAllHref="/discover"
-      />
-    ),
-  });
+        <QuoteCard quote={quote} />
 
-  return (
-    <div>
-      {blocks.map(({ key, node }, i) =>
-        // Герой сам себе лента: у него своя двухколоночная разметка.
-        node === null ? (
-          <HomeHero key={key} />
-        ) : (
-          <SectionBand key={key} tone={TONE_CYCLE[i % TONE_CYCLE.length]}>
-            {node}
-          </SectionBand>
-        ),
-      )}
+        {!userName && <HomeMemberBlock userName={userName} stats={stats} />}
+
+        {latestArticles.length > 0 && (
+          <section className="space-y-6">
+            <div className="flex items-end justify-between gap-4">
+              <div className="space-y-1">
+                <h2 className="font-serif text-2xl leading-tight sm:text-3xl">Блог</h2>
+                <p className="text-sm text-muted-foreground">
+                  Колонки редактора и обзоры
+                </p>
+              </div>
+              <Link
+                href="/blog"
+                className="shrink-0 text-sm font-medium underline underline-offset-4 hover:no-underline"
+              >
+                Все статьи
+              </Link>
+            </div>
+            <div className="grid gap-4 sm:grid-cols-3">
+              {latestArticles.map((a) => (
+                <Link
+                  key={a.id}
+                  href={`/blog/${a.slug}`}
+                  className="rounded-lg bg-secondary p-5 transition-colors hover:bg-secondary/70"
+                >
+                  <span className="text-xs uppercase tracking-widest text-muted-foreground">
+                    {a.kind === 'editorial'
+                      ? 'Колонка'
+                      : a.kind === 'review'
+                        ? 'Обзор'
+                        : 'Заметка'}
+                  </span>
+                  <h3 className="mt-2 font-serif text-lg leading-snug">{a.title}</h3>
+                  {a.excerpt && (
+                    <p className="mt-2 line-clamp-3 text-sm text-muted-foreground">
+                      {a.excerpt}
+                    </p>
+                  )}
+                </Link>
+              ))}
+            </div>
+          </section>
+        )}
+
+        <BookRow
+          title="Выбор администратора этой недели"
+          subtitle="Пять книг, которые советует команда «Книжной полки»"
+          books={adminPicks}
+          showAllHref="/discover"
+        />
+      </div>
     </div>
   );
 }

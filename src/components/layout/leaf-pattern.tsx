@@ -1,28 +1,28 @@
 /**
- * Фоновый паттерн зеленых лент - крупные лепестки.
+ * Фоновый узор зеленых лент.
  *
- * Форма одна: четверть круга с прямым углом и скругленной внешней
- * кромкой. Разные повороты и размеры дают ощущение растительного
- * орнамента, не превращая его в узнаваемый рисунок - фон не должен
- * спорить с текстом поверх.
+ * Без тайлинга. Первая версия собиралась из плитки через <pattern>, и
+ * это было ошибкой: SVG обрезает содержимое плитки по ее границам, из-за
+ * чего крупные формы получали прямые срезы, а стыки читались ровной
+ * сеткой вертикальных линий.
+ *
+ * Здесь несколько очень крупных форм разложены по одному холсту и
+ * намеренно уходят за края: в кадр попадают их куски, а не фигуры
+ * целиком - именно это и делает узор фоном, а не набором картинок.
+ * Прямых линий нет вовсе, только дуги.
  *
  * Цвет наследуется от ленты (currentColor), прозрачность задана
  * переменной --pattern-opacity в globals.css.
  */
 
-/** Четверть круга радиуса r: прямой угол в начале координат. */
-function petal(r: number): string {
-  return `M0,0 L${r},0 A${r},${r} 0 0,1 0,${r} Z`;
-}
+const VIEW_W = 1440;
+const VIEW_H = 720;
 
-const TILE = 420;
-
-/** Лепестки внутри одной плитки: сдвиг, поворот и радиус. */
-const LEAVES: { x: number; y: number; rotate: number; r: number }[] = [
-  { x: -40, y: -60, rotate: 12, r: 240 },
-  { x: 300, y: 40, rotate: 160, r: 180 },
-  { x: 90, y: 250, rotate: 255, r: 200 },
-  { x: 380, y: 300, rotate: 70, r: 150 },
+/** Овал: cx, cy, радиусы и наклон. */
+const BLOBS: { cx: number; cy: number; rx: number; ry: number; rotate: number }[] = [
+  { cx: 210, cy: 40, rx: 430, ry: 520, rotate: -14 },
+  { cx: 900, cy: -120, rx: 520, ry: 420, rotate: 10 },
+  { cx: 1360, cy: 620, rx: 420, ry: 500, rotate: -6 },
 ];
 
 export function LeafPattern({ className }: { className?: string }) {
@@ -30,28 +30,20 @@ export function LeafPattern({ className }: { className?: string }) {
     <svg
       aria-hidden="true"
       className={className}
-      width="100%"
-      height="100%"
+      viewBox={`0 0 ${VIEW_W} ${VIEW_H}`}
       preserveAspectRatio="xMidYMid slice"
     >
-      <defs>
-        <pattern
-          id="leaf-pattern"
-          width={TILE}
-          height={TILE}
-          patternUnits="userSpaceOnUse"
-        >
-          {LEAVES.map((leaf, i) => (
-            <path
-              key={i}
-              d={petal(leaf.r)}
-              fill="currentColor"
-              transform={`translate(${leaf.x} ${leaf.y}) rotate(${leaf.rotate})`}
-            />
-          ))}
-        </pattern>
-      </defs>
-      <rect width="100%" height="100%" fill="url(#leaf-pattern)" />
+      {BLOBS.map((b, i) => (
+        <ellipse
+          key={i}
+          cx={b.cx}
+          cy={b.cy}
+          rx={b.rx}
+          ry={b.ry}
+          fill="currentColor"
+          transform={`rotate(${b.rotate} ${b.cx} ${b.cy})`}
+        />
+      ))}
     </svg>
   );
 }
