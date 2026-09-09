@@ -17,6 +17,7 @@ import { getPublishedArticles } from '@/lib/articles/queries';
 import { emptyStats } from '@/lib/stats';
 import type { BookCardData } from '@/components/book/book-card';
 import Link from 'next/link';
+import { cn } from '@/lib/utils';
 
 export default async function HomePage() {
   const configured = isSupabaseConfigured();
@@ -91,6 +92,23 @@ export default async function HomePage() {
     ),
   });
 
+  // Рекомендация и опрос - парой сразу под первой каруселью: это два
+  // коротких действия, и в одну колонку они растягивали главную вдвое.
+  blocks.push({
+    key: 'tiles',
+    node: (
+      <div
+        className={cn(
+          'grid gap-4',
+          poll ? 'sm:grid-cols-2' : 'sm:max-w-xl',
+        )}
+      >
+        <RecommendationBlock isSignedIn={Boolean(user)} />
+        {poll && <PollWidget poll={poll} isSignedIn={Boolean(user)} />}
+      </div>
+    ),
+  });
+
   blocks.push({ key: 'quote', node: <QuoteCard quote={quote} /> });
 
   if (!userName) {
@@ -99,16 +117,6 @@ export default async function HomePage() {
       node: <HomeMemberBlock userName={userName} stats={stats} />,
     });
   }
-
-  blocks.push({
-    key: 'recommend',
-    node: (
-      <div className="space-y-10">
-        <RecommendationBlock isSignedIn={Boolean(user)} />
-        {poll && <PollWidget poll={poll} isSignedIn={Boolean(user)} />}
-      </div>
-    ),
-  });
 
   if (latestArticles.length > 0) {
     blocks.push({

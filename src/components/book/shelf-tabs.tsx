@@ -2,17 +2,47 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { BookOpen, Check, BookmarkPlus, Library } from 'lucide-react';
+import { BookOpen, Check, BookmarkPlus, BookX, Library } from 'lucide-react';
 import { cn, plural } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { BookCard } from '@/components/book/book-card';
 import type { ShelfItem } from '@/lib/shelf/queries';
 import type { ShelfStatus } from '@/lib/shelf/actions';
 
-const TABS: { id: ShelfStatus; label: string; icon: typeof BookOpen }[] = [
-  { id: 'reading', label: 'Читаю', icon: BookOpen },
-  { id: 'want', label: 'Хочу прочесть', icon: BookmarkPlus },
-  { id: 'read', label: 'Прочитано', icon: Check },
+interface Tab {
+  id: ShelfStatus;
+  label: string;
+  icon: typeof BookOpen;
+  /** Текст пустой полки: у каждой он свой по смыслу. */
+  empty: string;
+}
+
+const TABS: Tab[] = [
+  {
+    id: 'reading',
+    label: 'Читаю',
+    icon: BookOpen,
+    empty: 'Начните книгу - и она появится здесь.',
+  },
+  {
+    id: 'want',
+    label: 'Хочу прочесть',
+    icon: BookmarkPlus,
+    empty: 'Отложите сюда книги, до которых хотите добраться.',
+  },
+  {
+    id: 'read',
+    label: 'Прочитано',
+    icon: Check,
+    empty: 'Дочитанные книги собираются здесь и идут в статистику.',
+  },
+  {
+    id: 'dropped',
+    label: 'Не буду читать',
+    icon: BookX,
+    empty:
+      'Сюда попадают книги, которые вы бросили или решили не начинать. В статистику прочитанного они не идут.',
+  },
 ];
 
 interface ShelfTabsProps {
@@ -79,8 +109,8 @@ export function ShelfTabs({ books }: ShelfTabsProps) {
           <Library className="size-10 text-muted-foreground/40" aria-hidden="true" />
           <div>
             <p className="font-medium">На этой полке пока пусто</p>
-            <p className="mt-1 text-sm text-muted-foreground">
-              Найдите книгу и добавьте её сюда — она появится в этом разделе.
+            <p className="mt-1 max-w-sm text-sm text-muted-foreground">
+              {TABS.find((t) => t.id === active)?.empty}
             </p>
           </div>
           <Button asChild>

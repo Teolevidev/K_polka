@@ -57,36 +57,45 @@ export async function recommendBook(): Promise<RecommendationResult> {
 
   const supabase = await createSupabaseServerClient();
 
-  const [profileRes, alreadyRes, readRes, likedRes, popularRes] = await Promise.all([
-    supabase
-      .from('profiles')
-      .select('favorite_genres, display_name')
-      .eq('id', user.id)
-      .maybeSingle(),
-    supabase
-      .from('ai_recommendations')
-      .select('title, author')
-      .eq('user_id', user.id)
-      .order('created_at', { ascending: false })
-      .limit(30),
-    supabase
-      .from('user_books')
-      .select('books(title, authors)')
-      .eq('user_id', user.id)
-      .in('status', ['read', 'reading'])
-      .limit(40),
-    supabase
-      .from('reactions')
-      .select('target_id')
-      .eq('user_id', user.id)
-      .eq('target_type', 'review')
-      .eq('kind', 'like'),
-    supabase
-      .from('books')
-      .select('title, authors, ratings_count, ratings_sum')
-      .order('shelves_count', { ascending: false })
-      .limit(20),
-  ]);
+  const [profileRes, alreadyRes, readRes, droppedRes, likedRes, popularRes] =
+    await Promise.all([
+      supabase
+        .from('profiles')
+        .select('favorite_genres, display_name')
+        .eq('id', user.id)
+        .maybeSingle(),
+      supabase
+        .from('ai_recommendations')
+        .select('title, author')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false })
+        .limit(30),
+      supabase
+        .from('user_books')
+        .select('books(title, authors)')
+        .eq('user_id', user.id)
+        .in('status', ['read', 'reading'])
+        .limit(40),
+      // Брошенные книги идут отдельным списком, а не в общий: как вкус
+      // это сигнал обратный, и предлагать их заново тем более не нужно.
+      supabase
+        .from('user_books')
+        .select('books(title, authors)')
+        .eq('user_id', user.id)
+        .eq('status', 'dropped')
+        .limit(20),
+      supabase
+        .from('reactions')
+        .select('target_id')
+        .eq('user_id', user.id)
+        .eq('target_type', 'review')
+        .eq('kind', 'like'),
+      supabase
+        .from('books')
+        .select('title, authors, ratings_count, ratings_sum')
+        .order('shelves_count', { ascending: false })
+        .limit(20),
+    ]);
 
   const profile = profileRes.data as ProfilePrefs | null;
   if (!profile || (profile.favorite_genres ?? []).length < 3) {
@@ -108,6 +117,14 @@ export async function recommendBook(): Promise<RecommendationResult> {
     .map((b) => `«${b.title}» — ${b.authors}`)
     .slice(0, 30);
 
+  const droppedList = ((droppedRes.data ?? []) as unknown as {
+    books: { title: string; authors: string } | null;
+  }[])
+    .map((r) => r.books)
+    .filter((b): b is { title: string; authors: string } => Boolean(b))
+    .map((b) => `«${b.title}» - ${b.authors}`)
+    .slice(0, 20);
+
   const popular = ((popularRes.data ?? []) as { title: string; authors: string }[])
     .map((b) => `«${b.title}» — ${b.authors}`)
     .slice(0, 15);
@@ -117,6 +134,7 @@ export async function recommendBook(): Promise<RecommendationResult> {
     genres: profile.favorite_genres,
     alreadySuggested,
     readList,
+    droppedList,
     likedCount: likedRes.data?.length ?? 0,
     popular,
   });
@@ -184,6 +202,7 @@ function buildPrompt(input: {
   genres: string[];
   alreadySuggested: string[];
   readList: string[];
+  droppedList: string[];
   likedCount: number;
   popular: string[];
 }): string {
@@ -193,6 +212,9 @@ function buildPrompt(input: {
     `Его любимые жанры: ${input.genres.join(', ')}.`,
     input.readList.length > 0
       ? `Он уже читал или сейчас читает: ${input.readList.join('; ')}.`
+      : '',
+    input.droppedList.length > 0
+      ? `Эти книги он бросил или решил не читать - учти это как вкус наоборот и не предлагай их: ${input.droppedList.join('; ')}.`
       : '',
     input.likedCount > 0
       ? `Он лайкнул ${input.likedCount} отзыв(а/ов) других читателей.`

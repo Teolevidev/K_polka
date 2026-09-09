@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useState, useTransition } from 'react';
 import { Sparkles, Loader2, RefreshCw, BookOpen, AlertTriangle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { HomeTile } from './home-tile';
 import { recommendBook, type RecommendationResult } from '@/lib/ai/recommend';
 
 interface RecommendationBlockProps {
@@ -23,21 +24,19 @@ export function RecommendationBlock({ isSignedIn }: RecommendationBlockProps) {
   }
 
   return (
-    <section>
-      <div className="rounded-lg bg-background text-foreground p-5 shadow-lift sm:p-6">
-        <div className="mb-3 flex items-center gap-2">
-          <Sparkles className="size-5 text-primary" aria-hidden="true" />
-          <h2 className="font-serif text-lg font-semibold sm:text-xl">
-            Подобрать книгу — для вас лично
-          </h2>
-        </div>
+    <HomeTile icon={Sparkles} title="Подобрать книгу - для вас лично">
+      <div className="flex flex-1 flex-col">
         <p className="mb-4 text-sm text-muted-foreground">
           AI-помощник Книжной полки подбирает книгу на основе ваших любимых
           жанров, прочитанного и того, что популярно у других читателей.
         </p>
 
         {!result && (
-          <Button onClick={ask} disabled={pending || !isSignedIn} size="lg">
+          <Button
+            onClick={ask}
+            disabled={pending || !isSignedIn}
+            className="mt-auto self-start"
+          >
             {pending ? (
               <Loader2 className="size-4 animate-spin" />
             ) : (
@@ -61,7 +60,7 @@ export function RecommendationBlock({ isSignedIn }: RecommendationBlockProps) {
         )}
 
         {result && result.ok && (
-          <article className="grid gap-4 sm:grid-cols-[120px_1fr]">
+          <article className="grid gap-4 sm:grid-cols-[100px_1fr]">
             <div className="mx-auto w-28 sm:mx-0 sm:w-full">
               {result.coverUrl ? (
                 // eslint-disable-next-line @next/next/no-img-element
@@ -96,14 +95,14 @@ export function RecommendationBlock({ isSignedIn }: RecommendationBlockProps) {
                   ) : (
                     <RefreshCw className="size-4" />
                   )}
-                  Подумать ещё
+                  Подумать еще
                 </Button>
               </div>
             </div>
           </article>
         )}
       </div>
-    </section>
+    </HomeTile>
   );
 }
 
@@ -132,7 +131,7 @@ function RecommendationError({
         )}
         {result.needs === 'email' && (
           <p className="text-muted-foreground">
-            Войдите ещё раз по ссылке из письма — это автоматически подтвердит почту.
+            Войдите еще раз по ссылке из письма - это автоматически подтвердит почту.
           </p>
         )}
         {result.needs === 'api-key' && (
@@ -142,7 +141,7 @@ function RecommendationError({
         )}
         {!result.needs && (
           <Button onClick={onRetry} disabled={pending} size="sm" variant="outline">
-            Попробовать ещё раз
+            Попробовать еще раз
           </Button>
         )}
       </div>

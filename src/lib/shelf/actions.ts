@@ -7,7 +7,15 @@ import { getBookByRef } from '@/lib/books/detail';
 import { findOrCreateBook } from '@/lib/books/catalog';
 import { recomputeAchievements } from '@/lib/achievements/recompute';
 
-export type ShelfStatus = 'reading' | 'read' | 'want';
+/**
+ * Статус книги на полке.
+ *
+ * dropped - «не буду читать»: человек бросил книгу или передумал ее
+ * начинать. В статистику прочитанного не идет, но остается на полке
+ * вместе с оценкой и отзывом - иначе такую книгу некуда было деть,
+ * кроме как удалить.
+ */
+export type ShelfStatus = 'reading' | 'read' | 'want' | 'dropped';
 
 export interface ActionResult {
   ok: boolean;
