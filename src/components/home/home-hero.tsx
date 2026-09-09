@@ -2,72 +2,60 @@ import Link from 'next/link';
 import { SearchBar } from '@/components/layout/search-bar';
 import { Illustration } from '@/components/layout/illustration';
 import { BookCover } from '@/components/book/book-cover';
-import { showcaseSections } from '@/lib/books/showcase';
 import { Button } from '@/components/ui/button';
 import { SectionBand } from '@/components/layout/section-band';
+import { showcaseSections } from '@/lib/books/showcase';
 
 /**
- * Первый экран - по опорному баннеру: слева крупный вордмарк в две
- * строки с оранжевой чертой и коротким подзаголовком, справа
- * иллюстрация, на фоне зеленой ленты - лепестки.
+ * Первый экран - по образцу источника.
  *
- * Вордмарк набран гротеском, а не серифом, хотя остальные заголовки в
- * системе серифные: на баннере это фирменная плашка, а не обычный
- * заголовок, и жирный гротеск в верхнем регистре - ее узнаваемая часть.
+ * Слева серифный заголовок в две строки, подзаголовок гротеском и одна
+ * светлая кнопка-таблетка. Справа иллюстрация, крупная: она занимает
+ * больше половины ширины и уходит вниз за нижнее поле ленты, поэтому
+ * лента при этом остается низкой.
  *
- * Поиск и кнопка на баннере не нарисованы, но на главной без них
- * нельзя: это единственный экран, с которого начинают. Стоят ниже
- * подзаголовка, чтобы не спорить с вордмарком.
+ * Строку поиска источник не показывает, но у нас это главный вход в
+ * приложение - стоит под кнопкой, отдельной строкой.
  */
 export function HomeHero() {
   const collage = showcaseSections.popular.slice(0, 5);
 
   return (
-    <SectionBand tone="forest">
-      <div className="grid items-center gap-10 lg:grid-cols-[minmax(0,1fr)_minmax(0,520px)] lg:gap-12">
-        {/* Левая колонка: вордмарк, черта, подзаголовок, действия */}
-        <div className="text-cream">
-          <h1 className="font-sans text-[clamp(2.75rem,8vw,5.5rem)] font-extrabold uppercase leading-[0.92] tracking-tight">
-            Книжная
-            <br />
-            полка
+    <SectionBand tone="forest" className="overflow-hidden pb-0 pt-10 sm:pt-14">
+      <div className="grid items-end gap-6 lg:grid-cols-[minmax(0,46fr)_minmax(0,54fr)]">
+        {/* Левая колонка: заголовок и действия */}
+        <div className="pb-10 text-cream sm:pb-14">
+          <h1 className="font-serif text-[clamp(2.25rem,4.6vw,3.75rem)] leading-[1.02] text-balance">
+            Ваша библиотека
+            <br />в одном месте
           </h1>
 
-          {/* Черта под вордмарком - единственное место, где в системе
-              появляется оранжевый. */}
-          <div className="mt-5 h-1.5 w-32 rounded-full bg-orange sm:w-40" />
-
-          <p className="mt-7 text-lg leading-snug sm:text-xl">
-            Книжный клуб.
-            <br />
-            Трекер прочитанного.
+          <p className="mt-5 max-w-md text-base leading-relaxed opacity-90 sm:text-lg">
+            Книжный клуб и трекер прочитанного. Ведите список, ставьте цели и
+            обсуждайте книги с теми, кто читает рядом.
           </p>
 
-          <div className="mt-8 max-w-md">
-            <SearchBar placeholder="Найдите книгу: «Мастер и Маргарита»" />
-          </div>
-
-          <div className="mt-5 flex flex-wrap items-center gap-3">
+          <div className="mt-7">
             <Button size="lg" variant="onBand" asChild>
               <Link href="/signin">Завести полку</Link>
             </Button>
-            <Link
-              href="/discover"
-              className="text-base font-medium underline underline-offset-4 hover:no-underline"
-            >
-              Смотреть книги
-            </Link>
+          </div>
+
+          <div className="mt-6 max-w-md">
+            <SearchBar placeholder="Найдите книгу: «Мастер и Маргарита»" />
           </div>
         </div>
 
-        {/* Правая колонка: иллюстрация, а пока ее файла нет - «стопка»
-            обложек. Пустая колонка выглядела бы как недогрузившийся
-            блок, а обложки - тот же мотив: книга как арт-объект. */}
-        <div className="hidden lg:block">
+        {/* Правая колонка: иллюстрация во всю высоту ленты, до нижнего
+            края. Отрицательные поля дают ей выйти за колонку - иначе
+            она выглядит маленькой картинкой в углу. */}
+        <div className="hidden lg:-mr-10 lg:block xl:-mr-16">
           <Illustration
             priority
+            sizes="(min-width: 1024px) 820px, 100vw"
+            className="ml-auto w-full max-w-[820px]"
             fallback={
-              <div className="flex items-end justify-center gap-3">
+              <div className="flex items-end justify-center gap-3 pb-10">
                 {collage.map((book, i) => (
                   <div
                     key={book.title}
