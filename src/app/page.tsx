@@ -5,6 +5,7 @@ import { QuoteCard } from '@/components/home/quote-card';
 import { RecommendationBlock } from '@/components/home/recommendation-block';
 import { PollWidget } from '@/components/polls/poll-widget';
 import { SectionBand, type BandTone } from '@/components/layout/section-band';
+import { Illustration } from '@/components/layout/illustration';
 import { randomQuote } from '@/lib/quotes/data';
 import { showcaseSections } from '@/lib/books/showcase';
 import { isSupabaseConfigured } from '@/lib/supabase/env';
@@ -82,13 +83,19 @@ export default async function HomePage() {
   blocks.push({
     key: 'popular',
     node: (
-      <BookRow
-        title="Популярное сейчас"
-        subtitle="Что читают в «Книжной полке» на этой неделе"
-        books={showcaseSections.popular}
-        showAllHref="/discover"
-        ranked
-      />
+      <div className="space-y-8">
+        {/* Иллюстрация открывает ленту - крупно и по центру, над первой
+            каруселью. Декоративная, поэтому без подписи для читалки. */}
+        <Illustration className="mx-auto max-w-lg" />
+
+        <BookRow
+          title="Популярное сейчас"
+          subtitle="Что читают в «Книжной полке» на этой неделе"
+          books={showcaseSections.popular}
+          showAllHref="/discover"
+          ranked
+        />
+      </div>
     ),
   });
 

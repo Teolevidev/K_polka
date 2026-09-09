@@ -1,4 +1,5 @@
 import { cn } from '@/lib/utils';
+import { ILLUSTRATION } from './illustration';
 
 /**
  * Полноширинная лента-секция - главный структурный прием системы.
@@ -32,8 +33,26 @@ export function SectionBand({
   bleed = false,
   children,
 }: SectionBandProps) {
+  // Паттерн - только на зеленых лентах: это брендовый акцент, а не
+  // фон вообще всего. Прозрачность одна на всю систему и задана
+  // переменной, чтобы менять ее в одном месте.
+  const patterned = tone === 'forest';
+
   return (
-    <section className={cn('band', TONES[tone], className)}>
+    <section
+      className={cn('band', TONES[tone], patterned && 'relative isolate', className)}
+    >
+      {patterned && (
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute inset-0 -z-10 bg-repeat"
+          style={{
+            backgroundImage: `url(${ILLUSTRATION})`,
+            backgroundSize: '320px auto',
+            opacity: 'var(--pattern-opacity)',
+          }}
+        />
+      )}
       {bleed ? children : <div className="band-inner">{children}</div>}
     </section>
   );
