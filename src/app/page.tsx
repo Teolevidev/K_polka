@@ -86,7 +86,10 @@ export default async function HomePage() {
       <div className="space-y-8">
         {/* Иллюстрация открывает ленту - крупно и по центру, над первой
             каруселью. Декоративная, поэтому без подписи для читалки. */}
-        <Illustration className="mx-auto max-w-lg" />
+        <Illustration
+          className="mx-auto max-w-lg"
+          sizes="(min-width: 640px) 512px, 100vw"
+        />
 
         <BookRow
           title="Популярное сейчас"

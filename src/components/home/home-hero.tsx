@@ -65,6 +65,7 @@ export function HomeHero() {
             блок, а обложки - тот же мотив: книга как арт-объект. */}
         <div className="hidden lg:block">
           <Illustration
+            priority
             fallback={
               <div className="flex items-end justify-center gap-3">
                 {collage.map((book, i) => (
