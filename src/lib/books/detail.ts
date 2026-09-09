@@ -4,6 +4,14 @@ import { cleanIsbn } from './isbn';
 import { getLocalBookById } from './local';
 import { resolveCoverUrl } from './cover';
 import { htmlToPlainText } from './normalize';
+import { requireApiKey } from './google';
+import {
+  type GoogleVolume,
+  readAvailability,
+  readSeries,
+  readPrintType,
+  largestImageLink,
+} from './google-volume';
 import { createSupabaseServerClient } from '@/lib/supabase/server';
 import { isSupabaseConfigured } from '@/lib/supabase/env';
 
@@ -40,46 +48,10 @@ export function isTransientStatus(status: number): boolean {
   return status !== 404 && status !== 410;
 }
 
-interface GoogleVolumeFull {
-  id: string;
-  volumeInfo?: {
-    title?: string;
-    subtitle?: string;
-    authors?: string[];
-    publisher?: string;
-    publishedDate?: string;
-    description?: string;
-    pageCount?: number;
-    printedPageCount?: number;
-    categories?: string[];
-    language?: string;
-    averageRating?: number;
-    ratingsCount?: number;
-    /**
-     * Google отдаёт до шести размеров обложки. У массовых изданий есть
-     * все, у редких - только smallThumbnail. Раньше мы читали три и для
-     * остальных книг оставались без картинки, хотя она была.
-     */
-    imageLinks?: {
-      smallThumbnail?: string;
-      thumbnail?: string;
-      small?: string;
-      medium?: string;
-      large?: string;
-      extraLarge?: string;
-    };
-    industryIdentifiers?: { type: string; identifier: string }[];
-    infoLink?: string;
-    canonicalVolumeLink?: string;
-    previewLink?: string;
-  };
-}
-
 async function getGoogleBook(id: string): Promise<NormalizedBook | null> {
   const url = new URL(`https://www.googleapis.com/books/v1/volumes/${id}`);
-  if (process.env.GOOGLE_BOOKS_API_KEY) {
-    url.searchParams.set('key', process.env.GOOGLE_BOOKS_API_KEY);
-  }
+  url.searchParams.set('key', requireApiKey());
+
   const res = await fetch(url, { next: { revalidate: 86400 } });
   if (!res.ok) {
     if (isTransientStatus(res.status)) {
@@ -88,29 +60,17 @@ async function getGoogleBook(id: string): Promise<NormalizedBook | null> {
     return null;
   }
 
-  const v = (await res.json()) as GoogleVolumeFull;
-  const info = v.volumeInfo;
+  const volume = (await res.json()) as GoogleVolume;
+  const info = volume.volumeInfo;
   if (!info?.title) return null;
 
   const ids = info.industryIdentifiers ?? [];
   const isbn13 = ids.find((i) => i.type === 'ISBN_13')?.identifier ?? null;
   const isbn10 = ids.find((i) => i.type === 'ISBN_10')?.identifier ?? null;
 
-  // От большего к меньшему: на странице книги обложка крупная, и
-  // 128-пиксельный thumbnail на ней выглядит мылом.
-  const images = info.imageLinks ?? {};
-  const cover =
-    images.extraLarge ??
-    images.large ??
-    images.medium ??
-    images.small ??
-    images.thumbnail ??
-    images.smallThumbnail ??
-    null;
-
   return {
     source: 'google',
-    sourceId: v.id,
+    sourceId: volume.id,
     isbn13: isbn13 ? cleanIsbn(isbn13) : null,
     isbn10: isbn10 ? cleanIsbn(isbn10) : null,
     title: info.title,
@@ -119,11 +79,14 @@ async function getGoogleBook(id: string): Promise<NormalizedBook | null> {
     // Описание у Google приходит с разметкой - без очистки читатель
     // видит теги прямо в аннотации.
     description: info.description ? htmlToPlainText(info.description) : null,
-    coverUrl: cover,
+    coverUrl: largestImageLink(info),
     pageCount: info.pageCount ?? info.printedPageCount ?? null,
     publishedDate: info.publishedDate ?? null,
     publisher: info.publisher ?? null,
     sourceUrl: info.canonicalVolumeLink ?? info.infoLink ?? info.previewLink ?? null,
+    printType: readPrintType(info, volume.saleInfo?.isEbook),
+    availability: readAvailability(volume),
+    series: readSeries(info),
     language: info.language ?? null,
     genres: info.categories ?? [],
     mediaType: 'book',
@@ -219,7 +182,8 @@ export async function getBookByRef(ref: BookRef): Promise<NormalizedBook | null>
     const book = await loadBook(ref);
     // Обложку подбираем в одном месте для всех источников, чтобы
     // страница книги и карточка в выдаче показывали одну и ту же.
-    return book ? { ...book, coverUrl: resolveCoverUrl(book) } : null;
+    // На странице книги обложка крупная - просим большой размер.
+    return book ? { ...book, coverUrl: resolveCoverUrl(book, 'l') } : null;
   } catch (error) {
     if (error instanceof SourceUnavailableError) throw error;
     // Сеть не дошла или ответ не разобрался — это тоже не «книги нет».

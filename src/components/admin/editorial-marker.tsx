@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { markEditorialPick } from '@/lib/editorial/actions';
 import { useRouter } from 'next/navigation';
+import { proxiedCoverUrl } from '@/lib/books/cover';
 
 interface SearchResult {
   ref: string;
@@ -99,7 +100,7 @@ export function EditorialMarker() {
               {r.coverUrl ? (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img
-                  src={r.coverUrl}
+                  src={proxiedCoverUrl(r.coverUrl) ?? undefined}
                   alt=""
                   className="h-12 w-8 rounded object-cover"
                 />

@@ -11,7 +11,7 @@ import {
   preferredLanguage,
   detectScript,
 } from './normalize';
-import { searchGoogleBooks } from './google';
+import { searchGoogleBooks, GoogleBooksNotConfiguredError } from './google';
 import { searchOpenLibrary } from './openlibrary';
 import { searchLocalCatalog } from './local';
 import { resolveCoverUrl } from './cover';
@@ -128,14 +128,25 @@ export function mergeBooks(
 async function runSource(
   name: BookSource,
   fn: (signal: AbortSignal) => Promise<NormalizedBook[]>,
-): Promise<{ source: BookSource; books: NormalizedBook[]; ok: boolean }> {
+): Promise<{
+  source: BookSource;
+  books: NormalizedBook[];
+  ok: boolean;
+  /** Источник не сломался, а не настроен - чинится это по-разному. */
+  misconfigured: boolean;
+}> {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), SOURCE_TIMEOUT_MS);
   try {
     const books = await fn(controller.signal);
-    return { source: name, books, ok: true };
-  } catch {
-    return { source: name, books: [], ok: false };
+    return { source: name, books, ok: true, misconfigured: false };
+  } catch (error) {
+    return {
+      source: name,
+      books: [],
+      ok: false,
+      misconfigured: error instanceof GoogleBooksNotConfiguredError,
+    };
   } finally {
     clearTimeout(timer);
   }
@@ -311,6 +322,7 @@ export async function searchBooks(
       results: [],
       respondedSources: [],
       failedSources: [],
+      misconfiguredSources: [],
       filteredByScript: false,
       hiddenByScript: 0,
     };
@@ -342,8 +354,10 @@ export async function searchBooks(
 
   const respondedSources: BookSource[] = [];
   const failedSources: BookSource[] = [];
+  const misconfiguredSources: BookSource[] = [];
   for (const r of sourceResults) {
     (r.ok ? respondedSources : failedSources).push(r.source);
+    if (r.misconfigured) misconfiguredSources.push(r.source);
   }
 
   // Группировка по произведению. Индекс строим по всем ответам сразу,
@@ -406,6 +420,7 @@ export async function searchBooks(
     results: visible.slice(0, 50),
     respondedSources,
     failedSources,
+    misconfiguredSources,
     filteredByScript,
     hiddenByScript: filteredByScript ? scored.length - onScript.length : 0,
   };
