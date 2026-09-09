@@ -23,8 +23,9 @@ export function BookCover({ src, title, className }: BookCoverProps) {
   return (
     <div
       className={cn(
-        'aspect-cover relative overflow-hidden rounded-md bg-secondary',
-        'ring-1 ring-border',
+        // Ни рамок, ни бейджей: обложка лежит прямо на поверхности,
+        // от страницы ее отделяет только мягкая тень.
+        'aspect-cover relative overflow-hidden rounded-lg bg-secondary shadow-cover',
         className,
       )}
     >

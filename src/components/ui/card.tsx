@@ -6,7 +6,9 @@ const Card = React.forwardRef<HTMLDivElement, React.ComponentProps<'div'>>(
     <div
       ref={ref}
       className={cn(
-        'rounded-lg border border-border bg-card text-card-foreground shadow-sm',
+        // Рамок внутри лент не ставим: цветовой контраст делает всю
+        // структурную работу, а карточка - это кремовая подложка.
+        'rounded-lg bg-card text-card-foreground',
         className,
       )}
       {...props}

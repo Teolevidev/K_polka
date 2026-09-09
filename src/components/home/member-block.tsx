@@ -55,8 +55,8 @@ function MemberStats({ userName, stats }: { userName: string; stats: ReadingStat
   ];
 
   return (
-    <section className="container">
-      <div className="rounded-xl border border-border bg-card p-5 sm:p-6">
+    <section>
+      <div className="rounded-lg bg-background text-foreground p-5 shadow-lift sm:p-6">
         <div className="mb-4 flex items-center justify-between gap-4">
           <h2 className="text-xl font-semibold sm:text-2xl">
             С возвращением, {userName}
@@ -75,7 +75,7 @@ function MemberStats({ userName, stats }: { userName: string; stats: ReadingStat
             <Link
               key={label}
               href={href}
-              className="group rounded-lg border border-border bg-background p-4 transition-colors hover:border-primary/40 hover:bg-secondary/50"
+              className="group rounded-lg bg-secondary p-4 transition-colors hover:bg-secondary/70"
             >
               <div className="flex items-center gap-2 text-muted-foreground">
                 <Icon className="size-4 text-primary" aria-hidden="true" />
@@ -127,8 +127,8 @@ function GuestInvitation() {
   ];
 
   return (
-    <section className="container">
-      <div className="rounded-xl border border-border bg-card p-5 sm:p-6">
+    <section>
+      <div className="rounded-lg bg-background text-foreground p-5 shadow-lift sm:p-6">
         <div className="mb-4 flex items-center justify-between gap-4">
           <div>
             <h2 className="text-xl font-semibold sm:text-2xl">
@@ -151,7 +151,7 @@ function GuestInvitation() {
             <Link
               key={title}
               href={href}
-              className="group rounded-lg border border-border bg-background p-4 transition-colors hover:border-primary/40 hover:bg-secondary/50"
+              className="group rounded-lg bg-secondary p-4 transition-colors hover:bg-secondary/70"
             >
               <div className="mb-2 flex size-9 items-center justify-center rounded-md bg-primary/10 text-primary">
                 <Icon className="size-5" aria-hidden="true" />

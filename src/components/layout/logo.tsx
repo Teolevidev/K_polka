@@ -9,7 +9,11 @@ interface LogoProps {
 
 /**
  * Логотип «Книжная полка».
- * Знак — три книжных корешка на полке. Wordmark — серифный шрифт.
+ * Знак - три книжных корешка на полке. Wordmark - серифный шрифт.
+ *
+ * Знак наследует цвет текста (currentColor), поэтому одинаково читается
+ * и на светлой странице, и на зеленой ленте, и в темном подвале. Раньше
+ * корешки были прибиты к foreground и на темных лентах пропадали.
  */
 export function Logo({ variant = 'full', className }: LogoProps) {
   return (
@@ -21,8 +25,7 @@ export function Logo({ variant = 'full', className }: LogoProps) {
       <LogoMark />
       {variant === 'full' && (
         <span className="font-serif text-lg font-semibold leading-none tracking-tight">
-          Книжная{' '}
-          <span className="text-primary">полка</span>
+          Книжная <span className="text-accent">полка</span>
         </span>
       )}
     </Link>
@@ -40,7 +43,14 @@ export function LogoMark({ className }: { className?: string }) {
       aria-hidden="true"
     >
       {/* корешки книг */}
-      <rect x="6" y="6" width="5" height="18" rx="1" className="fill-primary" />
+      <rect
+        x="6"
+        y="6"
+        width="5"
+        height="18"
+        rx="1"
+        className="fill-current opacity-80"
+      />
       <rect
         x="12.5"
         y="9"
@@ -55,7 +65,7 @@ export function LogoMark({ className }: { className?: string }) {
         width="5"
         height="17.5"
         rx="1"
-        className="fill-foreground"
+        className="fill-current"
       />
       {/* полка */}
       <rect
@@ -64,7 +74,7 @@ export function LogoMark({ className }: { className?: string }) {
         width="24"
         height="2.6"
         rx="1.3"
-        className="fill-foreground"
+        className="fill-current"
       />
     </svg>
   );

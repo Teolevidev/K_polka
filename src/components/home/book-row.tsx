@@ -12,25 +12,26 @@ interface BookRowProps {
 }
 
 /**
- * Горизонтальная карусель книг — основной строительный блок главной.
- * Прокручивается свайпом на мобильных, скроллбар скрыт.
+ * Горизонтальная полоса обложек - основной контентный блок.
+ *
+ * Живет внутри ленты-секции, поэтому своей ширины не задает. Полоса
+ * намеренно выходит за поля ленты и обрезается краем экрана: так видно,
+ * что ряд продолжается и его можно прокрутить.
  */
 export function BookRow({ title, subtitle, books, showAllHref, ranked }: BookRowProps) {
   if (books.length === 0) return null;
 
   return (
-    <section className="space-y-3">
-      <div className="container flex items-end justify-between gap-4">
-        <div>
-          <h2 className="text-xl font-semibold sm:text-2xl">{title}</h2>
-          {subtitle && (
-            <p className="mt-0.5 text-sm text-muted-foreground">{subtitle}</p>
-          )}
+    <section className="space-y-4">
+      <div className="flex items-end justify-between gap-4">
+        <div className="space-y-1">
+          <h2 className="font-serif text-2xl leading-tight sm:text-3xl">{title}</h2>
+          {subtitle && <p className="text-sm opacity-70">{subtitle}</p>}
         </div>
         {showAllHref && (
           <Link
             href={showAllHref}
-            className="flex shrink-0 items-center gap-0.5 text-sm font-medium text-primary hover:underline"
+            className="flex shrink-0 items-center gap-0.5 text-sm font-medium underline underline-offset-4 hover:no-underline"
           >
             Показать все
             <ChevronRight className="size-4" aria-hidden="true" />
@@ -38,8 +39,8 @@ export function BookRow({ title, subtitle, books, showAllHref, ranked }: BookRow
         )}
       </div>
 
-      <div className="no-scrollbar overflow-x-auto">
-        <div className="container flex gap-2">
+      <div className="no-scrollbar -mx-4 overflow-x-auto px-4 sm:-mx-6 sm:px-6">
+        <div className="flex gap-3">
           {books.map((book, i) => (
             <BookCard
               key={`${book.href}-${i}`}

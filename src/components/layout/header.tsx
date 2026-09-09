@@ -8,13 +8,25 @@ import { isSupabaseConfigured } from '@/lib/supabase/env';
 import { getCurrentUser } from '@/lib/supabase/server';
 import { getAdminContext } from '@/lib/admin/auth';
 
-/** Верхняя шапка приложения. */
+const NAV_LINKS = [
+  { href: '/blog', label: 'Блог' },
+  { href: '/discover', label: 'Обзор' },
+  { href: '/library', label: 'Моя полка' },
+];
+
+/**
+ * Верхняя шапка: логотип слева, ссылки по центру, аккаунт справа.
+ *
+ * Минимальная и без рамки - в опорном стиле границу между шапкой и
+ * первой лентой рисует смена цвета, а не хайрлайн. Липкость оставляем:
+ * поиск должен быть под рукой на любой глубине страницы.
+ */
 export async function Header() {
   const signedIn = isSupabaseConfigured() ? Boolean(await getCurrentUser()) : false;
   const admin = signedIn ? await getAdminContext() : null;
 
   return (
-    <header className="sticky top-0 z-40 border-b border-border bg-background/85 backdrop-blur supports-[backdrop-filter]:bg-background/70">
+    <header className="sticky top-0 z-40 bg-background/90 backdrop-blur supports-[backdrop-filter]:bg-background/75">
       <div className="container flex h-16 items-center gap-4">
         <Logo />
 
@@ -26,19 +38,22 @@ export async function Header() {
         </div>
 
         <nav className="ml-auto flex items-center gap-1">
-          <Button variant="ghost" size="sm" asChild className="hidden sm:inline-flex">
-            <Link href="/blog">Блог</Link>
-          </Button>
-          <Button variant="ghost" size="sm" asChild className="hidden sm:inline-flex">
-            <Link href="/discover">Обзор</Link>
-          </Button>
-          <Button variant="ghost" size="sm" asChild className="hidden sm:inline-flex">
-            <Link href="/library">Моя полка</Link>
-          </Button>
+          {NAV_LINKS.map(({ href, label }) => (
+            <Link
+              key={href}
+              href={href}
+              className="hidden px-3 text-sm font-medium underline-offset-4 hover:underline sm:inline-flex"
+            >
+              {label}
+            </Link>
+          ))}
           {admin && (
-            <Button variant="ghost" size="sm" asChild className="hidden sm:inline-flex">
-              <Link href="/admin">Админка</Link>
-            </Button>
+            <Link
+              href="/admin"
+              className="hidden px-3 text-sm font-medium underline-offset-4 hover:underline sm:inline-flex"
+            >
+              Админка
+            </Link>
           )}
           <ThemeToggle />
           {signedIn ? (

@@ -23,8 +23,8 @@ export function RecommendationBlock({ isSignedIn }: RecommendationBlockProps) {
   }
 
   return (
-    <section className="container">
-      <div className="rounded-xl border border-border bg-card p-5 sm:p-6">
+    <section>
+      <div className="rounded-lg bg-background text-foreground p-5 shadow-lift sm:p-6">
         <div className="mb-3 flex items-center gap-2">
           <Sparkles className="size-5 text-primary" aria-hidden="true" />
           <h2 className="font-serif text-lg font-semibold sm:text-xl">

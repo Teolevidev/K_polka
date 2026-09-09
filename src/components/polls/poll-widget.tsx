@@ -44,8 +44,8 @@ export function PollWidget({ poll, isSignedIn }: PollWidgetProps) {
   }
 
   return (
-    <section className="container">
-      <div className="rounded-xl border border-border bg-card p-5">
+    <section>
+      <div className="rounded-lg bg-background text-foreground p-5 shadow-lift">
         <div className="mb-3 flex items-center gap-2">
           <Vote className="size-5 text-primary" aria-hidden="true" />
           <h2 className="font-serif text-lg font-semibold sm:text-xl">
