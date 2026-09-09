@@ -10,18 +10,25 @@ interface IllustrationProps {
   className?: string;
   /** Описание для читалки экрана. Пусто - картинка декоративная. */
   alt?: string;
+  /** Что показать вместо иллюстрации, если файла нет. */
+  fallback?: React.ReactNode;
 }
 
 /**
  * Фирменная иллюстрация.
  *
- * Если файла нет, компонент не рисует ничего: пустое место лучше, чем
- * иконка битой картинки посреди главной. Так же ведет себя обложка
- * книги, когда источник не отдал изображение.
+ * Если файла нет, показываем запасной вариант, а при его отсутствии -
+ * ничего: пустое место лучше, чем иконка битой картинки посреди
+ * главной. Так же ведет себя обложка книги, когда источник не отдал
+ * изображение.
  */
-export function Illustration({ className, alt = '' }: IllustrationProps) {
+export function Illustration({
+  className,
+  alt = '',
+  fallback = null,
+}: IllustrationProps) {
   const [failed, setFailed] = useState(false);
-  if (failed) return null;
+  if (failed) return <>{fallback}</>;
 
   return (
     // eslint-disable-next-line @next/next/no-img-element
