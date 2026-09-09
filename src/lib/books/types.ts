@@ -27,6 +27,12 @@ export interface NormalizedBook {
   publisher?: string | null;
   /** Страница книги в источнике - «посмотреть в Google Books». */
   sourceUrl?: string | null;
+  /** Бумажная книга, электронная, журнал. */
+  printType?: string | null;
+  /** Что с книгой можно сделать: почитать, скачать, купить. */
+  availability?: BookAvailability | null;
+  /** Серия, если издание в нее входит. */
+  series?: BookSeries | null;
   /** Код языка: 'ru', 'en', … */
   language: string | null;
   genres: string[];
@@ -58,6 +64,35 @@ export interface NormalizedBook {
   externalRating?: { average: number; count: number } | null;
 }
 
+/**
+ * Что с книгой можно сделать прямо сейчас: почитать, скачать, купить.
+ *
+ * На сайте Google это вкладка «Получить книгу». В API те же данные
+ * лежат в saleInfo и accessInfo - двух блоках, которые мы раньше не
+ * читали вовсе.
+ */
+export interface BookAvailability {
+  /** Насколько доступен предпросмотр: никак, фрагмент, целиком. */
+  preview: 'none' | 'partial' | 'full';
+  /** Есть ли электронное издание. */
+  isEbook: boolean;
+  /** Общественное достояние - можно читать и скачивать свободно. */
+  publicDomain: boolean;
+  epub: boolean;
+  pdf: boolean;
+  /** Ссылка на читалку Google. */
+  readerUrl: string | null;
+  /** Ссылка на покупку. */
+  buyUrl: string | null;
+  price: { amount: number; currency: string } | null;
+}
+
+/** Книга в серии: «Дозоры», книга 3. */
+export interface BookSeries {
+  title: string | null;
+  number: number | null;
+}
+
 export interface SearchResultBook extends NormalizedBook {
   /** Релевантность 0..1 — насколько результат соответствует запросу. */
   score: number;
@@ -72,6 +107,12 @@ export interface BookSearchResponse {
   respondedSources: BookSource[];
   /** Источники, не ответившие вовремя. */
   failedSources: BookSource[];
+  /**
+   * Источники, которые не настроены: например, не задан ключ Google.
+   * Отделено от failedSources намеренно - «мы не настроили» и «у них
+   * сбой» чинятся совершенно по-разному.
+   */
+  misconfiguredSources: BookSource[];
   /**
    * Выдача сокращена до названий на алфавите запроса: по русскому запросу
    * показаны только русские названия. Ложь, если фильтровать было нечего

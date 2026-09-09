@@ -9,6 +9,7 @@ import { SourceUnavailableNotice } from '@/components/book/source-unavailable-no
 import { BookCover } from '@/components/book/book-cover';
 import { AddToShelf } from '@/components/book/add-to-shelf';
 import { BookDetails } from '@/components/book/book-details';
+import { BookAvailabilityBlock } from '@/components/book/book-availability';
 import { AuthorBlock, AuthorBlockSkeleton } from '@/components/book/author-block';
 import {
   OtherEditions,
@@ -107,7 +108,7 @@ export default async function BookPage({ params }: BookPageProps) {
       {/* Шапка: обложка, название, автор, оценка, действия */}
       <div className="grid gap-6 sm:grid-cols-[200px_1fr] sm:gap-8">
         <div className="mx-auto w-40 space-y-3 sm:mx-0 sm:w-full">
-          <BookCover src={book.coverUrl} title={book.title} />
+          <BookCover src={book.coverUrl} title={book.title} size="l" />
           <AddToShelf
             bookRef={ref}
             isSignedIn={Boolean(user)}
@@ -170,6 +171,8 @@ export default async function BookPage({ params }: BookPageProps) {
       </div>
 
       <BookDetails book={book} />
+
+      <BookAvailabilityBlock availability={book.availability} />
 
       {/* Блоки ниже ходят во внешние источники. Каждый под своим Suspense:
           страница книги показывается сразу, а справка и соседние книги

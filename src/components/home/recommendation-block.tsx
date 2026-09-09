@@ -6,6 +6,7 @@ import { Sparkles, Loader2, RefreshCw, BookOpen, AlertTriangle } from 'lucide-re
 import { Button } from '@/components/ui/button';
 import { HomeTile } from './home-tile';
 import { recommendBook, type RecommendationResult } from '@/lib/ai/recommend';
+import { proxiedCoverUrl } from '@/lib/books/cover';
 
 interface RecommendationBlockProps {
   isSignedIn: boolean;
@@ -65,7 +66,7 @@ export function RecommendationBlock({ isSignedIn }: RecommendationBlockProps) {
               {result.coverUrl ? (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img
-                  src={result.coverUrl}
+                  src={proxiedCoverUrl(result.coverUrl) ?? undefined}
                   alt=""
                   className="aspect-[2/3] w-full rounded-md object-cover ring-1 ring-border"
                 />

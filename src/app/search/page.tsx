@@ -27,6 +27,7 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
         results: [],
         respondedSources: [],
         failedSources: [],
+        misconfiguredSources: [],
         filteredByScript: false,
         hiddenByScript: 0,
       };
@@ -110,10 +111,20 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
             </p>
           )}
 
-          {data.failedSources.length > 0 && (
+          {/* «Не настроено» и «не ответило» - разные беды: первую чинит
+              администратор за минуту, вторая проходит сама. */}
+          {data.misconfiguredSources.includes('google') ? (
             <p className="text-xs text-muted-foreground">
-              Часть источников не ответила вовремя — результаты могут быть неполными.
+              Google Books не подключен: не задан ключ доступа, и поиск идет
+              только по своему каталогу и OpenLibrary.
             </p>
+          ) : (
+            data.failedSources.length > 0 && (
+              <p className="text-xs text-muted-foreground">
+                Часть источников не ответила вовремя - результаты могут быть
+                неполными.
+              </p>
+            )
           )}
         </div>
       )}

@@ -10,9 +10,9 @@ import {
   htmlToPlainText,
 } from '@/lib/books/normalize';
 import {
-  normalizeCoverUrl,
-  openLibraryCoverByIsbn,
   resolveCoverUrl,
+  isProxiedHost,
+  proxiedCoverUrl,
 } from '@/lib/books/cover';
 import {
   formatPublishedDate,
@@ -574,50 +574,63 @@ describe('htmlToPlainText — описание из Google Books', () => {
 });
 
 describe('обложки', () => {
-  it('http переписывается на https', () => {
-    expect(normalizeCoverUrl('http://books.google.com/books/content?id=A')).toBe(
-      'https://books.google.com/books/content?id=A',
-    );
-  });
-
-  it('загнутый уголок edge=curl убирается', () => {
-    const url = normalizeCoverUrl(
-      'https://books.google.com/books/content?id=A&edge=curl&zoom=1',
-    );
-    expect(url).not.toContain('edge=curl');
-    expect(url).toContain('zoom=1');
-  });
-
-  it('прочие параметры остаются нетронутыми', () => {
-    const url = normalizeCoverUrl(
-      'https://books.google.com/books/content?id=A&printsec=frontcover&img=1',
-    );
-    expect(url).toContain('printsec=frontcover');
-    expect(url).toContain('img=1');
-  });
-
-  it('обложка по ISBN запрашивается с default=false', () => {
-    // Без этого OpenLibrary отдаёт серую заглушку с кодом 200,
-    // и наш плейсхолдер с названием книги не показывается.
-    expect(openLibraryCoverByIsbn('978-5-457-15174-1')).toBe(
-      'https://covers.openlibrary.org/b/isbn/9785457151741-M.jpg?default=false',
-    );
-  });
-
-  it('своя ссылка на обложку имеет приоритет над ISBN', () => {
+  it('обложка Google уходит через наш маршрут, а не напрямую', () => {
+    // Прямая ссылка на books.google.com не грузится у читателей, чей
+    // провайдер режет google.com по SNI.
     const url = resolveCoverUrl(
-      book({ coverUrl: 'https://example.org/cover.jpg', isbn13: '9785457151741' }),
+      book({
+        source: 'google',
+        sourceId: 'jBiIQlevopYC',
+        coverUrl: 'https://books.google.com/books/content?id=jBiIQlevopYC',
+      }),
+    );
+    expect(url).toMatch(/^\/api\/cover\?/);
+    expect(url).toContain('g=jBiIQlevopYC');
+  });
+
+  it('в запрос кладутся все известные зацепки сразу', () => {
+    // Маршрут переберет их сам и вернет первую настоящую картинку.
+    const url = resolveCoverUrl(
+      book({
+        source: 'google',
+        sourceId: 'jBiIQlevopYC',
+        coverUrl: 'https://books.google.com/books/content?id=jBiIQlevopYC',
+        isbn13: '9785457151741',
+      }),
+    );
+    expect(url).toContain('u=');
+    expect(url).toContain('g=jBiIQlevopYC');
+    expect(url).toContain('isbn=9785457151741');
+  });
+
+  it('чужая обложка с постороннего хоста отдается как есть', () => {
+    // Ручное добавление: белый список такую ссылку не пропустит,
+    // а гнать ее через себя незачем.
+    const url = resolveCoverUrl(
+      book({ coverUrl: 'https://example.org/cover.jpg', source: 'local' }),
     );
     expect(url).toBe('https://example.org/cover.jpg');
   });
 
-  it('без обложки, но с ISBN — берём OpenLibrary', () => {
+  it('без обложки, но с ISBN - просим по ISBN', () => {
     const url = resolveCoverUrl(book({ coverUrl: null, isbn13: '9785457151741' }));
-    expect(url).toContain('covers.openlibrary.org');
+    expect(url).toContain('isbn=9785457151741');
   });
 
-  it('без обложки и без ISBN — null, покажем плейсхолдер', () => {
-    expect(resolveCoverUrl(book({ coverUrl: null }))).toBeNull();
+  it('размер передается маршруту', () => {
+    const url = resolveCoverUrl(book({ isbn13: '9785457151741' }), 'l');
+    expect(url).toContain('size=l');
+  });
+
+  it('просить нечего - null, покажем плейсхолдер', () => {
+    expect(resolveCoverUrl(book({ coverUrl: null, source: 'local' }))).toBeNull();
+  });
+
+  it('белый список хостов закрыт для посторонних', () => {
+    expect(isProxiedHost('https://books.google.com/x')).toBe(true);
+    expect(isProxiedHost('https://covers.openlibrary.org/x')).toBe(true);
+    expect(isProxiedHost('https://evil.example/x')).toBe(false);
+    expect(isProxiedHost('не ссылка')).toBe(false);
   });
 });
 
@@ -653,5 +666,36 @@ describe('блок «Об издании»', () => {
 
   it('пустая книга не даёт ни одной строки', () => {
     expect(buildEditionFacts(book({}))).toHaveLength(0);
+  });
+});
+
+describe('обложки из базы', () => {
+  it('сохраненный адрес Google уходит через наш маршрут', () => {
+    // В cover_url лежат прямые адреса, сохраненные при добавлении книги.
+    const url = proxiedCoverUrl(
+      'https://books.google.com/books/content?id=A&zoom=1',
+    );
+    expect(url).toMatch(/^\/api\/cover\?u=/);
+  });
+
+  it('свой адрес остается как есть', () => {
+    expect(proxiedCoverUrl('/api/cover?g=A')).toBe('/api/cover?g=A');
+  });
+
+  it('посторонний хост не заворачиваем - белый список его не пропустит', () => {
+    expect(proxiedCoverUrl('https://example.org/c.jpg')).toBe(
+      'https://example.org/c.jpg',
+    );
+  });
+
+  it('пусто на входе - пусто на выходе', () => {
+    expect(proxiedCoverUrl(null)).toBeNull();
+    expect(proxiedCoverUrl(undefined)).toBeNull();
+  });
+
+  it('размер передается маршруту', () => {
+    expect(proxiedCoverUrl('https://covers.openlibrary.org/b/id/1-M.jpg', 'l')).toContain(
+      'size=l',
+    );
   });
 });

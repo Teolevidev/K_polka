@@ -3,12 +3,15 @@
 import { useState } from 'react';
 import { BookOpen } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { proxiedCoverUrl, type CoverSize } from '@/lib/books/cover';
 
 interface BookCoverProps {
   src: string | null | undefined;
   title: string;
   className?: string;
   sizes?: string;
+  /** Насколько крупная нужна картинка. */
+  size?: CoverSize;
 }
 
 /**
@@ -16,9 +19,13 @@ interface BookCoverProps {
  * Если изображения нет или оно не загрузилось — рисуем плейсхолдер
  * с инициалами названия.
  */
-export function BookCover({ src, title, className }: BookCoverProps) {
+export function BookCover({ src, title, className, size = 'm' }: BookCoverProps) {
   const [failed, setFailed] = useState(false);
-  const showImage = src && !failed;
+  // Чужие обложки идут через наш маршрут, где бы ни был взят адрес:
+  // из поиска, из базы или из витрины главной. Одно место на все
+  // приложение - иначе каждый новый экран заводит свою дырку.
+  const url = proxiedCoverUrl(src, size);
+  const showImage = url && !failed;
 
   return (
     <div
@@ -32,7 +39,7 @@ export function BookCover({ src, title, className }: BookCoverProps) {
       {showImage ? (
         // eslint-disable-next-line @next/next/no-img-element
         <img
-          src={src}
+          src={url}
           alt={`Обложка книги «${title}»`}
           loading="lazy"
           decoding="async"

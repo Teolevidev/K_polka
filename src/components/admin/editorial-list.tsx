@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { unmarkEditorialPick, rotateNow } from '@/lib/editorial/actions';
 import type { EditorialPick } from '@/lib/editorial/queries';
+import { proxiedCoverUrl } from '@/lib/books/cover';
 
 interface EditorialListProps {
   picks: EditorialPick[];
@@ -92,7 +93,7 @@ export function EditorialList({ picks, currentWeekMonday }: EditorialListProps) 
               {p.coverUrl ? (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img
-                  src={p.coverUrl}
+                  src={proxiedCoverUrl(p.coverUrl) ?? undefined}
                   alt=""
                   className="h-12 w-8 rounded object-cover"
                 />

@@ -66,6 +66,15 @@ export function buildEditionFacts(book: NormalizedBook): {
       value: LANGUAGE_NAMES[book.language] ?? book.language.toUpperCase(),
     });
   }
+  if (book.printType) facts.push({ label: 'Формат', value: book.printType });
+  if (book.series?.number) {
+    facts.push({
+      label: 'В серии',
+      value: book.series.title
+        ? `${book.series.title}, книга ${book.series.number}`
+        : `Книга ${book.series.number}`,
+    });
+  }
   const isbns = [book.isbn13, book.isbn10].filter(Boolean);
   if (isbns.length) facts.push({ label: 'ISBN', value: isbns.join(', ') });
   if (book.editionCount && book.editionCount > 1) {
