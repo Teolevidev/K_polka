@@ -1,5 +1,6 @@
 import type { NormalizedBook } from './types';
 import { cleanIsbn, isValidIsbn13, isValidIsbn10 } from './isbn';
+import { stripLigatureMarks } from './normalize';
 
 /**
  * Клиент OpenLibrary API.
@@ -23,6 +24,8 @@ const FIELDS = [
   'language',
   'subject',
   'edition_count',
+  'ratings_average',
+  'ratings_count',
 ].join(',');
 
 interface OpenLibraryDoc {
@@ -37,6 +40,8 @@ interface OpenLibraryDoc {
   language?: string[];
   subject?: string[];
   edition_count?: number;
+  ratings_average?: number;
+  ratings_count?: number;
 }
 
 interface OpenLibraryResponse {
@@ -52,6 +57,23 @@ const LANG_MAP: Record<string, string> = {
   spa: 'es',
   ita: 'it',
 };
+
+/**
+ * Максимум ISBN, запоминаемых на одно произведение. У классики изданий
+ * бывают сотни, а нам нужен лишь мост к изданиям Google Books.
+ */
+const MAX_EDITION_ISBNS = 80;
+
+/** Собирает валидные ISBN-13 всех изданий произведения. */
+function collectIsbn13s(list: string[] | undefined): string[] {
+  const out: string[] = [];
+  for (const raw of list ?? []) {
+    if (out.length >= MAX_EDITION_ISBNS) break;
+    const cleaned = cleanIsbn(raw);
+    if (isValidIsbn13(cleaned)) out.push(cleaned);
+  }
+  return out;
+}
 
 function pickIsbns(list: string[] | undefined): {
   isbn13: string | null;
@@ -77,9 +99,11 @@ function normalizeDoc(doc: OpenLibraryDoc): NormalizedBook | null {
     sourceId: doc.key,
     isbn13,
     isbn10,
-    title: doc.title,
-    subtitle: doc.subtitle ?? null,
-    authors: doc.author_name ?? [],
+    // Названия приходят из MARC-каталогов в транслитерации ALA-LC,
+    // с невидимыми половинками лигатур внутри — их убираем.
+    title: stripLigatureMarks(doc.title),
+    subtitle: doc.subtitle ? stripLigatureMarks(doc.subtitle) : null,
+    authors: (doc.author_name ?? []).map(stripLigatureMarks),
     description: null, // подробное описание — отдельным запросом на /works/{key}.json
     coverUrl: doc.cover_i ? `${COVER_BASE}/id/${doc.cover_i}-M.jpg` : null,
     pageCount: doc.number_of_pages_median ?? null,
@@ -88,6 +112,12 @@ function normalizeDoc(doc: OpenLibraryDoc): NormalizedBook | null {
     genres: (doc.subject ?? []).slice(0, 8),
     mediaType: 'book',
     editionCount: doc.edition_count ?? 1,
+    workId: doc.key,
+    editionIsbns: collectIsbn13s(doc.isbn),
+    externalRating:
+      typeof doc.ratings_average === 'number' && (doc.ratings_count ?? 0) > 0
+        ? { average: doc.ratings_average, count: doc.ratings_count ?? 0 }
+        : null,
   };
 }
 
@@ -111,11 +141,29 @@ export async function searchOpenLibrary(
   url.searchParams.set('limit', String(Math.min(limit, 50)));
   url.searchParams.set('fields', FIELDS);
 
-  const res = await fetch(url, {
-    signal,
-    headers: { 'User-Agent': 'KnizhnayaPolka/0.1 (book tracker)' },
-    next: { revalidate: 3600 },
-  });
+  const request = (revalidate: number) =>
+    fetch(url, {
+      signal,
+      headers: { 'User-Agent': 'KnizhnayaPolka/0.1 (book tracker)' },
+      next: { revalidate },
+    });
+
+  // OpenLibrary заметно нестабилен: диагностика с продакшена ловила
+  // «fetch failed» - обрыв на уровне сети, ещё до ответа. Это дорогая
+  // потеря: именно он отдаёт настоящие произведения русских авторов,
+  // тогда как Google по ним даёт в основном литературоведение.
+  // Без повтора источник молча выпадает, и выдача перекашивается.
+  let res: Response;
+  try {
+    res = await request(3600);
+  } catch {
+    res = await request(0);
+  }
+
+  if (res.status >= 500) {
+    res = await request(0);
+  }
+
   if (!res.ok) {
     throw new Error(`OpenLibrary вернул ${res.status}`);
   }

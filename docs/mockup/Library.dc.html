@@ -1,0 +1,151 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Lora:wght@500;600&display=swap">
+  <style>
+    body { margin: 0; font-family: 'Inter', system-ui, -apple-system, sans-serif; }
+    a { color: #96412C; text-decoration: none; }
+    a:hover { color: #7A3524; }
+    h1, h2, h3 { font-family: 'Lora', Georgia, serif; margin: 0; text-wrap: balance; }
+    p { margin: 0; }
+  </style>
+</helmet>
+
+<div style="background: {{paper}}; color: #2A2622; min-height: 100%;">
+
+  <!-- Шапка -->
+  <div style="display: flex; align-items: center; gap: 16px; height: 64px; padding: 0 80px; border-bottom: 1px solid #E2DDD5; background: rgba(252,250,248,0.9);">
+    <div style="display: flex; align-items: center; gap: 8px;">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="{{brand}}" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M4 4.5A1.5 1.5 0 0 1 5.5 3H19v18H5.5A1.5 1.5 0 0 1 4 19.5z"></path><path d="M9 3v18"></path>
+      </svg>
+      <span style="font-family: 'Lora', Georgia, serif; font-size: 19px; font-weight: 600; letter-spacing: -0.01em;">Книжная полка</span>
+    </div>
+    <div style="flex-grow: 1; display: flex; justify-content: center;">
+      <div style="display: flex; align-items: center; gap: 8px; width: 100%; max-width: 420px; height: 36px; padding: 0 12px; border: 1px solid #E2DDD5; border-radius: 8px; background: #FFFFFF;">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#746B63" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"></circle><path d="m20 20-3.5-3.5"></path></svg>
+        <span style="font-size: 14px; color: #746B63;">Книги, авторы, люди</span>
+      </div>
+    </div>
+    <div style="display: flex; align-items: center; gap: 4px;">
+      <span style="font-size: 14px; font-weight: 500; padding: 0 12px;">Цитаты</span>
+      <span style="font-size: 14px; font-weight: 500; padding: 0 12px;">Обзор</span>
+      <span style="font-size: 14px; font-weight: 500; padding: 0 12px; color: {{brand}};">Моя полка</span>
+      <div style="width: 32px; height: 32px; border-radius: 999px; background: #EDE5D9; margin-left: 8px;"></div>
+    </div>
+  </div>
+
+  <div style="padding: 40px 80px 0;">
+
+    <!-- Заголовок и действие -->
+    <div style="display: flex; align-items: flex-end; justify-content: space-between; gap: 24px;">
+      <div style="display: flex; flex-direction: column; gap: 6px;">
+        <h1 style="font-size: 34px; font-weight: 600; line-height: 1.25;">Моя полка</h1>
+        <p style="font-size: 15px; color: #746B63;">119 книг, из них 87 прочитано</p>
+      </div>
+      <div style="display: flex; align-items: center; gap: 8px; height: 40px; padding: 0 16px; border-radius: 8px; background: {{brand}}; color: #FCFAF8; font-size: 14px; font-weight: 500;">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#FCFAF8" stroke-width="2" stroke-linecap="round"><path d="M12 5v14"></path><path d="M5 12h14"></path></svg>
+        Добавить книгу
+      </div>
+    </div>
+
+    <!-- Табы статусов -->
+    <div style="display: flex; align-items: center; gap: 4px; margin-top: 28px; border-bottom: 1px solid #E2DDD5;">
+      <sc-for list="{{tabs}}" as="t" hint-placeholder-count="4">
+        <div style="display: flex; align-items: center; gap: 7px; padding: 0 14px 12px; border-bottom: 2px solid {{t.line}};">
+          <span style="font-size: 15px; font-weight: {{t.weight}}; color: {{t.color}};">{{t.label}}</span>
+          <span style="font-size: 12px; font-weight: 500; color: #746B63; background: #F1EEE9; border-radius: 999px; padding: 2px 7px;">{{t.count}}</span>
+        </div>
+      </sc-for>
+    </div>
+
+    <!-- Сетка книг -->
+    <div style="display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 24px; margin-top: 28px;">
+      <sc-for list="{{books}}" as="b" hint-placeholder-count="12">
+        <div style="display: flex; flex-direction: column; gap: 8px;">
+          <div style="width: 100%; aspect-ratio: 2 / 3; border-radius: 4px; background: {{b.bg}}; display: flex; flex-direction: column; justify-content: space-between; padding: 14px; box-shadow: 0 1px 3px rgba(0,0,0,0.06);">
+            <span style="font-family: 'Lora', Georgia, serif; font-size: 15px; font-weight: 600; line-height: 1.25; color: {{b.fg}};">{{b.title}}</span>
+            <span style="font-size: 10px; letter-spacing: 0.06em; text-transform: uppercase; color: {{b.fg}}; opacity: 0.72;">{{b.author}}</span>
+          </div>
+          <div style="display: flex; flex-direction: column; gap: 3px;">
+            <span style="font-size: 14px; font-weight: 500; line-height: 1.35;">{{b.title}}</span>
+            <span style="font-size: 12px; color: #746B63;">{{b.author}}</span>
+            <div style="display: flex; align-items: center; gap: 5px; margin-top: 2px;">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="#CC9933" stroke="#CC9933" stroke-width="2" stroke-linejoin="round"><path d="m12 2 3.1 6.3 6.9 1-5 4.9 1.2 6.9L12 17.8 5.8 21l1.2-6.9-5-4.9 6.9-1z"></path></svg>
+              <span style="font-size: 12px; color: #746B63;">{{b.rating}}</span>
+            </div>
+          </div>
+        </div>
+      </sc-for>
+    </div>
+
+    <!-- Свои полки -->
+    <div style="margin-top: 44px; display: flex; flex-direction: column; gap: 14px;">
+      <h2 style="font-size: 20px; font-weight: 600;">Свои полки</h2>
+      <div style="display: flex; flex-wrap: wrap; gap: 10px;">
+        <sc-for list="{{shelves}}" as="s" hint-placeholder-count="5">
+          <div style="display: flex; align-items: center; gap: 8px; height: 36px; padding: 0 14px; border: 1px solid #E2DDD5; border-radius: 999px; background: #FFFFFF;">
+            <span style="font-size: 14px; font-weight: 500;">{{s.name}}</span>
+            <span style="font-size: 12px; color: #746B63;">{{s.count}}</span>
+          </div>
+        </sc-for>
+        <div style="display: flex; align-items: center; gap: 7px; height: 36px; padding: 0 14px; border: 1px dashed #D5CCC0; border-radius: 999px; color: #746B63;">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#746B63" stroke-width="2" stroke-linecap="round"><path d="M12 5v14"></path><path d="M5 12h14"></path></svg>
+          <span style="font-size: 14px;">Новая полка</span>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+</x-dc>
+
+<script data-dc-script data-props='{
+  "brand": {"editor": "color", "default": "#96412C", "options": ["#96412C", "#3F5C4A", "#2F4858", "#6B4E7A"], "section": "Цвета"},
+  "paper": {"editor": "color", "default": "#FCFAF8", "options": ["#FCFAF8", "#F8F8F8", "#FAF7F0", "#FFFFFF"], "section": "Цвета"}
+}'>
+class Component extends DCLogic {
+  renderVals() {
+    const brand = this.props.brand ?? '#96412C';
+    return {
+      brand: brand,
+      paper: this.props.paper ?? '#FCFAF8',
+      tabs: [
+        { label: 'Хочу прочитать', count: '24', line: 'transparent', color: '#746B63', weight: '500' },
+        { label: 'Читаю',          count: '3',  line: brand,         color: '#2A2622', weight: '600' },
+        { label: 'Прочитано',      count: '87', line: 'transparent', color: '#746B63', weight: '500' },
+        { label: 'Брошено',        count: '5',  line: 'transparent', color: '#746B63', weight: '500' }
+      ],
+      books: [
+        { title: 'Тень горя',          author: 'Робертс',    bg: '#8C5A3C', fg: '#FDF8F2', rating: '8,4' },
+        { title: 'Средневековье',      author: 'Ле Гофф',    bg: '#3F5C4A', fg: '#F4F8F5', rating: '9,0' },
+        { title: 'Дюна',               author: 'Герберт',    bg: '#C08A3E', fg: '#2A2622', rating: '9,6' },
+        { title: 'Сто лет одиночества',author: 'Маркес',     bg: '#7A3524', fg: '#FDF3EE', rating: '8,8' },
+        { title: 'Лавр',               author: 'Водолазкин', bg: '#2F4858', fg: '#EEF4F7', rating: '9,2' },
+        { title: 'Щегол',              author: 'Тартт',      bg: '#D8CFC0', fg: '#2A2622', rating: '8,1' },
+        { title: 'Пикник на обочине',  author: 'Стругацкие', bg: '#5C5140', fg: '#F7F3EA', rating: '9,4' },
+        { title: 'Норвежский лес',     author: 'Мураками',   bg: '#6B4E7A', fg: '#F6F1F8', rating: '7,9' },
+        { title: 'Благоволительницы',  author: 'Литтелл',    bg: '#4A4038', fg: '#F5F1EC', rating: '8,6' },
+        { title: 'Убить пересмешника',  author: 'Ли',        bg: '#A8632F', fg: '#FDF6EF', rating: '9,1' },
+        { title: 'Здесь была Бритт-Мари', author: 'Бакман', bg: '#3F5C4A', fg: '#F4F8F5', rating: '8,0' },
+        { title: 'Чапаев и Пустота',   author: 'Пелевин',    bg: '#2A2622', fg: '#F5F1EC', rating: '8,7' }
+      ],
+      shelves: [
+        { name: 'Перечитать',        count: '12' },
+        { name: 'Про работу',        count: '9'  },
+        { name: 'Подарить кому-то',  count: '4'  },
+        { name: 'Долгие вечера',     count: '17' },
+        { name: 'Книга месяца',      count: '6'  }
+      ]
+    };
+  }
+}
+</script>
+</body>
+</html>

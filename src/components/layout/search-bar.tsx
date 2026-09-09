@@ -1,7 +1,7 @@
 'use client';
 
-import { useRouter } from 'next/navigation';
-import { useState, type FormEvent } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { useEffect, useState, type FormEvent } from 'react';
 import { Search } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -20,7 +20,16 @@ export function SearchBar({
   placeholder = 'Название, автор или ISBN',
 }: SearchBarProps) {
   const router = useRouter();
-  const [value, setValue] = useState(initialQuery);
+  const params = useSearchParams();
+  const urlQuery = params.get('q') ?? '';
+  const [value, setValue] = useState(initialQuery || urlQuery);
+
+  // Строка поиска в шапке - единственная на странице выдачи, поэтому она
+  // обязана показывать текущий запрос: иначе его нечем отредактировать.
+  // Синхронизируем при переходах, когда компонент не пересоздаётся.
+  useEffect(() => {
+    setValue(initialQuery || urlQuery);
+  }, [initialQuery, urlQuery]);
 
   function onSubmit(e: FormEvent) {
     e.preventDefault();

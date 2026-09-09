@@ -1,11 +1,44 @@
 import type { NormalizedBook } from './types';
 import type { BookRef } from './ref';
 import { cleanIsbn } from './isbn';
+import { getLocalBookById } from './local';
+import { resolveCoverUrl } from './cover';
+import { htmlToPlainText } from './normalize';
+import { createSupabaseServerClient } from '@/lib/supabase/server';
+import { isSupabaseConfigured } from '@/lib/supabase/env';
 
 /**
  * Получение одной книги по ссылке источника — для страницы книги.
  * Поддерживает Google Books (полные данные) и OpenLibrary (work + авторы).
  */
+
+/**
+ * Источник не смог ответить: исчерпана квота, сбой на их стороне,
+ * сеть не дошла.
+ *
+ * Отличать это от «книги нет» важно: раньше любая такая осечка
+ * превращалась в страницу «Книга не найдена», хотя книга существует и
+ * ссылка верная. Человек видел «ссылка устарела» и не понимал, почему
+ * поиск книгу показывает, а открыть её нельзя.
+ */
+export class SourceUnavailableError extends Error {
+  constructor(
+    readonly source: string,
+    readonly status: number,
+  ) {
+    super(`Источник ${source} ответил ${status}`);
+    this.name = 'SourceUnavailableError';
+  }
+}
+
+/**
+ * Ответ говорит о временной беде источника, а не об отсутствии книги.
+ * 404 и 410 — книги действительно нет. Остальное (429 — квота,
+ * 5xx — сбой, 403 — доступ) заслуживает честного сообщения.
+ */
+export function isTransientStatus(status: number): boolean {
+  return status !== 404 && status !== 410;
+}
 
 interface GoogleVolumeFull {
   id: string;
@@ -13,13 +46,32 @@ interface GoogleVolumeFull {
     title?: string;
     subtitle?: string;
     authors?: string[];
+    publisher?: string;
     publishedDate?: string;
     description?: string;
     pageCount?: number;
+    printedPageCount?: number;
     categories?: string[];
     language?: string;
-    imageLinks?: { thumbnail?: string; medium?: string; large?: string };
+    averageRating?: number;
+    ratingsCount?: number;
+    /**
+     * Google отдаёт до шести размеров обложки. У массовых изданий есть
+     * все, у редких - только smallThumbnail. Раньше мы читали три и для
+     * остальных книг оставались без картинки, хотя она была.
+     */
+    imageLinks?: {
+      smallThumbnail?: string;
+      thumbnail?: string;
+      small?: string;
+      medium?: string;
+      large?: string;
+      extraLarge?: string;
+    };
     industryIdentifiers?: { type: string; identifier: string }[];
+    infoLink?: string;
+    canonicalVolumeLink?: string;
+    previewLink?: string;
   };
 }
 
@@ -29,7 +81,12 @@ async function getGoogleBook(id: string): Promise<NormalizedBook | null> {
     url.searchParams.set('key', process.env.GOOGLE_BOOKS_API_KEY);
   }
   const res = await fetch(url, { next: { revalidate: 86400 } });
-  if (!res.ok) return null;
+  if (!res.ok) {
+    if (isTransientStatus(res.status)) {
+      throw new SourceUnavailableError('Google Books', res.status);
+    }
+    return null;
+  }
 
   const v = (await res.json()) as GoogleVolumeFull;
   const info = v.volumeInfo;
@@ -38,12 +95,18 @@ async function getGoogleBook(id: string): Promise<NormalizedBook | null> {
   const ids = info.industryIdentifiers ?? [];
   const isbn13 = ids.find((i) => i.type === 'ISBN_13')?.identifier ?? null;
   const isbn10 = ids.find((i) => i.type === 'ISBN_10')?.identifier ?? null;
-  const cover = (
-    info.imageLinks?.large ??
-    info.imageLinks?.medium ??
-    info.imageLinks?.thumbnail ??
-    ''
-  ).replace(/^http:/, 'https:');
+
+  // От большего к меньшему: на странице книги обложка крупная, и
+  // 128-пиксельный thumbnail на ней выглядит мылом.
+  const images = info.imageLinks ?? {};
+  const cover =
+    images.extraLarge ??
+    images.large ??
+    images.medium ??
+    images.small ??
+    images.thumbnail ??
+    images.smallThumbnail ??
+    null;
 
   return {
     source: 'google',
@@ -53,13 +116,21 @@ async function getGoogleBook(id: string): Promise<NormalizedBook | null> {
     title: info.title,
     subtitle: info.subtitle ?? null,
     authors: info.authors ?? [],
-    description: info.description ?? null,
-    coverUrl: cover || null,
-    pageCount: info.pageCount ?? null,
+    // Описание у Google приходит с разметкой - без очистки читатель
+    // видит теги прямо в аннотации.
+    description: info.description ? htmlToPlainText(info.description) : null,
+    coverUrl: cover,
+    pageCount: info.pageCount ?? info.printedPageCount ?? null,
     publishedDate: info.publishedDate ?? null,
+    publisher: info.publisher ?? null,
+    sourceUrl: info.canonicalVolumeLink ?? info.infoLink ?? info.previewLink ?? null,
     language: info.language ?? null,
     genres: info.categories ?? [],
     mediaType: 'book',
+    externalRating:
+      typeof info.averageRating === 'number' && (info.ratingsCount ?? 0) > 0
+        ? { average: info.averageRating, count: info.ratingsCount ?? 0 }
+        : null,
   };
 }
 
@@ -78,7 +149,12 @@ async function getOpenLibraryBook(key: string): Promise<NormalizedBook | null> {
     headers: { 'User-Agent': 'KnizhnayaPolka/0.1 (book tracker)' },
     next: { revalidate: 86400 },
   });
-  if (!res.ok) return null;
+  if (!res.ok) {
+    if (isTransientStatus(res.status)) {
+      throw new SourceUnavailableError('OpenLibrary', res.status);
+    }
+    return null;
+  }
 
   const work = (await res.json()) as OpenLibraryWork;
   if (!work.title) return null;
@@ -123,24 +199,49 @@ async function getOpenLibraryBook(key: string): Promise<NormalizedBook | null> {
       : null,
     pageCount: null,
     publishedDate: null,
+    publisher: null,
+    sourceUrl: `https://openlibrary.org${workPath}`,
     language: null,
     genres: (work.subjects ?? []).slice(0, 8),
     mediaType: 'book',
   };
 }
 
-/** Получает книгу по ссылке источника. */
+/**
+ * Получает книгу по ссылке источника.
+ *
+ * Бросает SourceUnavailableError, если источник не ответил: вызывающая
+ * сторона должна показать «источник недоступен», а не «книга не найдена».
+ * Возвращает null только когда книги действительно нет.
+ */
 export async function getBookByRef(ref: BookRef): Promise<NormalizedBook | null> {
   try {
-    switch (ref.source) {
-      case 'google':
-        return await getGoogleBook(ref.sourceId);
-      case 'openlibrary':
-        return await getOpenLibraryBook(ref.sourceId);
-      default:
-        return null;
+    const book = await loadBook(ref);
+    // Обложку подбираем в одном месте для всех источников, чтобы
+    // страница книги и карточка в выдаче показывали одну и ту же.
+    return book ? { ...book, coverUrl: resolveCoverUrl(book) } : null;
+  } catch (error) {
+    if (error instanceof SourceUnavailableError) throw error;
+    // Сеть не дошла или ответ не разобрался — это тоже не «книги нет».
+    throw new SourceUnavailableError(ref.source, 0);
+  }
+}
+
+/** Разбор ссылки на источник: где именно лежит книга. */
+async function loadBook(ref: BookRef): Promise<NormalizedBook | null> {
+  switch (ref.source) {
+    case 'google':
+      return await getGoogleBook(ref.sourceId);
+    case 'openlibrary':
+      return await getOpenLibraryBook(ref.sourceId);
+    case 'local': {
+      // Книга из нашего каталога: заведена вручную или сохранена,
+      // когда кто-то положил её на полку.
+      if (!isSupabaseConfigured()) return null;
+      const supabase = await createSupabaseServerClient();
+      return await getLocalBookById(supabase, ref.sourceId);
     }
-  } catch {
-    return null;
+    default:
+      return null;
   }
 }

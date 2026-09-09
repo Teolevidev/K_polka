@@ -4,7 +4,6 @@ import { SearchX, Plus } from 'lucide-react';
 import { searchBooks } from '@/lib/books/search';
 import { encodeBookRef } from '@/lib/books/ref';
 import { detectQueryKind } from '@/lib/books/isbn';
-import { SearchBar } from '@/components/layout/search-bar';
 import { SearchResultsView } from '@/components/book/search-results-view';
 import { Button } from '@/components/ui/button';
 import { plural } from '@/lib/utils';
@@ -12,26 +11,35 @@ import { plural } from '@/lib/utils';
 export const metadata: Metadata = { title: 'Поиск книг' };
 
 interface SearchPageProps {
-  searchParams: Promise<{ q?: string }>;
+  searchParams: Promise<{ q?: string; all?: string }>;
 }
 
 export default async function SearchPage({ searchParams }: SearchPageProps) {
-  const { q = '' } = await searchParams;
+  const { q = '', all } = await searchParams;
   const query = q.trim();
   const hasQuery = query.length >= 2;
+  const allScripts = all === '1';
 
   const data = hasQuery
-    ? await searchBooks(query)
-    : { query, results: [], respondedSources: [], failedSources: [] };
+    ? await searchBooks(query, { allScripts })
+    : {
+        query,
+        results: [],
+        respondedSources: [],
+        failedSources: [],
+        filteredByScript: false,
+        hiddenByScript: 0,
+      };
 
   const kind = detectQueryKind(query);
 
   return (
     <div className="container space-y-6 py-6">
-      <div className="mx-auto max-w-xl space-y-2">
+      {/* Поле поиска только одно - в шапке. Здесь остаётся подсказка:
+          она стоит сразу под ним и объясняет, что можно вводить. */}
+      <div className="mx-auto max-w-xl space-y-1 text-center">
         <h1 className="text-2xl font-semibold">Поиск книг</h1>
-        <SearchBar initialQuery={query} autoFocus={!hasQuery} />
-        <p className="text-xs text-muted-foreground">
+        <p className="text-sm text-muted-foreground">
           Ищите по названию, автору или ISBN. Поиск понимает опечатки.
         </p>
       </div>
@@ -52,7 +60,7 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
             </p>
           </div>
           <Button variant="outline" asChild>
-            <Link href="/book/new">
+            <Link href={`/book/new?q=${encodeURIComponent(query)}`}>
               <Plus className="size-4" />
               Добавить вручную
             </Link>
@@ -76,6 +84,31 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
               href: `/book/${encodeBookRef(book.source, book.sourceId)}`,
             }))}
           />
+
+          {data.filteredByScript && data.hiddenByScript > 0 && (
+            <p className="text-xs text-muted-foreground">
+              Показаны книги с русскими названиями.{' '}
+              <Link
+                href={`/search?q=${encodeURIComponent(query)}&all=1`}
+                className="underline underline-offset-4 hover:text-foreground"
+              >
+                Показать все {data.hiddenByScript} скрытых
+              </Link>{' '}
+              — переводы и записи в латинской транслитерации.
+            </p>
+          )}
+
+          {allScripts && (
+            <p className="text-xs text-muted-foreground">
+              Показаны книги на всех языках.{' '}
+              <Link
+                href={`/search?q=${encodeURIComponent(query)}`}
+                className="underline underline-offset-4 hover:text-foreground"
+              >
+                Только с русскими названиями
+              </Link>
+            </p>
+          )}
 
           {data.failedSources.length > 0 && (
             <p className="text-xs text-muted-foreground">

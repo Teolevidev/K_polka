@@ -23,7 +23,7 @@ const J_GUARD_RE = new RegExp(J_GUARD, 'g');
  * плейсхолдером. «ё» заменяется на «е» до нормализации.
  */
 export function normalizeText(input: string): string {
-  return input
+  return stripLigatureMarks(input)
     .toLowerCase()
     .replace(/ё/g, 'е')
     .replace(/й/g, J_GUARD)
@@ -33,6 +33,46 @@ export function normalizeText(input: string): string {
     .replace(/[^\p{L}\p{N}\s]/gu, ' ')
     .replace(/\s+/g, ' ')
     .trim();
+}
+
+/**
+ * Убирает половинки лигатур ALA-LC (U+FE20–U+FE2F).
+ *
+ * Библиотечная транслитерация кодирует ими диграфы: «ю» записывается как
+ * «i͡u» с невидимой скобкой поверх пары букв. Шрифты их обычно не
+ * отрисовывают, и в интерфейсе получается «Li◻u◻dmila» вместо
+ * «Liudmila». В названиях из OpenLibrary такое встречается постоянно.
+ */
+export function stripLigatureMarks(input: string): string {
+  return input.replace(/[︠-︯]/g, '');
+}
+
+/** Доминирующий алфавит строки. */
+export type Script = 'cyrillic' | 'latin' | 'other';
+
+/**
+ * Определяет, каким алфавитом набрана строка.
+ * Считаем буквы каждого алфавита и берём тот, которого больше.
+ */
+export function detectScript(input: string): Script {
+  const cyrillic = input.match(/\p{Script=Cyrillic}/gu)?.length ?? 0;
+  const latin = input.match(/\p{Script=Latin}/gu)?.length ?? 0;
+  if (cyrillic === 0 && latin === 0) return 'other';
+  return cyrillic >= latin ? 'cyrillic' : 'latin';
+}
+
+/**
+ * Язык, который стоит предпочесть в выдаче для этого запроса.
+ *
+ * Кириллический запрос — почти наверняка поиск русского издания:
+ * человек, набравший «Лавр Водолазкин», не хочет получить перевод
+ * «Laurus» первым результатом.
+ *
+ * Для латиницы язык намеренно не навязываем: запрос может быть и к
+ * оригиналу на английском, и транслитерацией русского названия.
+ */
+export function preferredLanguage(query: string): string | null {
+  return detectScript(query) === 'cyrillic' ? 'ru' : null;
 }
 
 /** Разбивает нормализованный текст на токены-слова. */
@@ -74,6 +114,15 @@ export function similarity(a: string, b: string): number {
 }
 
 /**
+ * Минимальное сходство токенов, ниже которого совпадение не засчитывается.
+ *
+ * Подобрано так, чтобы опечатки проходили: замена одной буквы в слове из
+ * четырёх даёт 0.75, из десяти - 0.9. А случайное совпадение букв в
+ * несвязанных словах остаётся ниже и обнуляется.
+ */
+const MIN_TOKEN_SIMILARITY = 0.6;
+
+/**
  * Оценивает, насколько строка query соответствует target,
  * учитывая опечатки. Возвращает score 0..1.
  *
@@ -94,7 +143,12 @@ export function fuzzyScore(query: string, target: string): number {
       // токен запроса как подстрока токена цели — почти точное совпадение
       if (tt.includes(qt) && qt.length >= 3) best = Math.max(best, 0.95);
     }
-    totalBest += best;
+    // Слабое посимвольное сходство — это шум, а не совпадение. «спектр»
+    // и «дефектоскопия» набирали около 0.4 просто потому, что буквы
+    // местами совпадают, и пара таких слов протаскивала в выдачу
+    // справочники и научные журналы. Опечатка даёт заметно больше порога,
+    // так что терпимость к ней сохраняется.
+    totalBest += best >= MIN_TOKEN_SIMILARITY ? best : 0;
   }
   let score = totalBest / queryTokens.length;
 
@@ -105,4 +159,44 @@ export function fuzzyScore(query: string, target: string): number {
     score = Math.min(1, score + 0.15);
   }
   return Number(score.toFixed(4));
+}
+
+/**
+ * Превращает описание с разметкой в чистый текст.
+ *
+ * Google Books отдаёт description с HTML внутри: абзацы, переносы,
+ * выделения, а иногда и целые списки. Мы выводим его как обычный текст,
+ * поэтому теги в аннотации видны читателю как есть - «<p>Роман о...».
+ *
+ * Абзацы и переносы сохраняем как переводы строк: страница книги выводит
+ * описание с whitespace-pre-line, и структура текста не теряется.
+ */
+export function htmlToPlainText(input: string): string {
+  const entities: Record<string, string> = {
+    '&nbsp;': ' ',
+    '&amp;': '&',
+    '&lt;': '<',
+    '&gt;': '>',
+    '&quot;': '"',
+    '&apos;': "'",
+    '&laquo;': '«',
+    '&raquo;': '»',
+    '&mdash;': '-',
+    '&ndash;': '-',
+    '&hellip;': '...',
+  };
+
+  return input
+    .replace(/<br\s*\/?>/gi, '\n')
+    .replace(/<\/(p|div|li|h[1-6])>/gi, '\n\n')
+    .replace(/<li[^>]*>/gi, '- ')
+    .replace(/<[^>]+>/g, '')
+    .replace(/&#(\d+);/g, (_, code: string) =>
+      String.fromCodePoint(Number(code)),
+    )
+    .replace(/&[a-z]+;/gi, (entity) => entities[entity.toLowerCase()] ?? entity)
+    .replace(/[ \t]+/g, ' ')
+    .replace(/ *\n */g, '\n')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim();
 }
