@@ -18,6 +18,7 @@ import {
 } from '@/components/book/related-books';
 import { Badge } from '@/components/ui/badge';
 import { plural } from '@/lib/utils';
+import { localizeGenres } from '@/lib/books/genres';
 import { isSupabaseConfigured } from '@/lib/supabase/env';
 import { getCurrentUser, createSupabaseServerClient } from '@/lib/supabase/server';
 import { getShelfStatusByRef } from '@/lib/shelf/queries';
@@ -102,6 +103,9 @@ export default async function BookPage({ params }: BookPageProps) {
     : {};
 
   const primaryAuthor = book.authors[0] ?? null;
+  // Google отдает жанры путями BISAC на английском - показывать их как
+  // есть на русской странице нельзя.
+  const genres = localizeGenres(book.genres);
 
   return (
     <div className="container max-w-4xl space-y-10 py-6 sm:py-10">
@@ -145,9 +149,9 @@ export default async function BookPage({ params }: BookPageProps) {
             </p>
           )}
 
-          {book.genres.length > 0 && (
+          {genres.length > 0 && (
             <div className="flex flex-wrap gap-1.5">
-              {book.genres.slice(0, 6).map((g) => (
+              {genres.slice(0, 6).map((g) => (
                 <Badge key={g} variant="secondary">
                   {g}
                 </Badge>

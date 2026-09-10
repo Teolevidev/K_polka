@@ -21,7 +21,7 @@ export type CoverSize = 's' | 'm' | 'l';
 
 type CoverFields = Pick<
   NormalizedBook,
-  'coverUrl' | 'isbn13' | 'isbn10' | 'source' | 'sourceId'
+  'coverUrl' | 'isbn13' | 'isbn10' | 'source' | 'sourceId' | 'googleVolumeId'
 >;
 
 /** true, если картинку с этого адреса имеет смысл гнать через себя. */
@@ -56,9 +56,11 @@ export function resolveCoverUrl(
     params.set('u', book.coverUrl);
   }
 
-  if (book.source === 'google' && book.sourceId) {
-    params.set('g', book.sourceId);
-  }
+  // Том Google: либо книга пришла оттуда прямо сейчас, либо ее
+  // идентификатор сохранен в каталоге при добавлении.
+  const volumeId =
+    book.googleVolumeId ?? (book.source === 'google' ? book.sourceId : null);
+  if (volumeId) params.set('g', volumeId);
 
   const isbn = book.isbn13 ?? book.isbn10;
   if (isbn) params.set('isbn', cleanIsbn(isbn));

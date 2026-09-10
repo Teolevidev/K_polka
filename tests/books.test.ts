@@ -36,6 +36,7 @@ import {
   detectQueryKind,
 } from '@/lib/books/isbn';
 import { encodeBookRef, decodeBookRef } from '@/lib/books/ref';
+import { localizeGenre, localizeGenres } from '@/lib/books/genres';
 import { isTransientStatus, SourceUnavailableError } from '@/lib/books/detail';
 
 describe('normalizeText', () => {
@@ -697,5 +698,62 @@ describe('обложки из базы', () => {
     expect(proxiedCoverUrl('https://covers.openlibrary.org/b/id/1-M.jpg', 'l')).toContain(
       'size=l',
     );
+  });
+});
+
+describe('жанры Google в человеческом виде', () => {
+  it('берется самый точный уровень пути BISAC', () => {
+    // Именно так пришли жанры «Спектра» из живого ответа API.
+    expect(localizeGenre('Fiction / Science Fiction / Space Opera')).toBe(
+      'Космическая опера',
+    );
+  });
+
+  it('пустой уровень General пропускается', () => {
+    expect(localizeGenre('Literary Collections / General')).toBe(
+      'Литературные сборники',
+    );
+  });
+
+  it('незнакомый поджанр поднимается до знакомого уровня', () => {
+    // Лучше показать «Художественная литература», чем английское
+    // «Nautical» посреди русской страницы.
+    expect(localizeGenre('Fiction / Nautical')).toBe('Художественная литература');
+    expect(localizeGenre('Philosophy / Zzz')).toBe('Философия');
+  });
+
+  it('если незнаком весь путь - показываем самый точный уровень, а не пустоту', () => {
+    expect(localizeGenre('Nautical / Zzz')).toBe('Zzz');
+  });
+
+  it('повторы схлопываются', () => {
+    // Два разных пути BISAC часто сходятся в один жанр.
+    const list = localizeGenres([
+      'Fiction / Science Fiction / General',
+      'Juvenile Fiction / Science Fiction',
+    ]);
+    expect(list).toEqual(['Научная фантастика']);
+  });
+
+  it('пустой список остается пустым', () => {
+    expect(localizeGenres([])).toEqual([]);
+  });
+});
+
+describe('обложка книги из своего каталога', () => {
+  it('собирается по сохраненному идентификатору тома', () => {
+    // В каталоге лежит google_books_id, а готовой ссылки нет: в ней был
+    // бы зашит размер, а книга показывается и мелко, и крупно.
+    const url = resolveCoverUrl(
+      book({
+        source: 'local',
+        sourceId: 'uuid-каталога',
+        googleVolumeId: 'jBiIQlevopYC',
+        coverUrl: null,
+      }),
+      'l',
+    );
+    expect(url).toContain('g=jBiIQlevopYC');
+    expect(url).toContain('size=l');
   });
 });

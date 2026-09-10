@@ -19,12 +19,13 @@ import { cleanIsbn } from './isbn';
 
 /** Поля каталога, которых хватает для карточки в выдаче. */
 const BOOK_SELECT =
-  'id, isbn_13, isbn_10, title, subtitle, description, cover_url, page_count, published_date, language, media_type, authors, ratings_count, ratings_sum';
+  'id, isbn_13, isbn_10, google_books_id, title, subtitle, description, cover_url, page_count, published_date, language, media_type, authors, ratings_count, ratings_sum';
 
 interface CatalogRow {
   id: string;
   isbn_13: string | null;
   isbn_10: string | null;
+  google_books_id: string | null;
   title: string;
   subtitle: string | null;
   description: string | null;
@@ -50,6 +51,7 @@ export function catalogRowToBook(row: CatalogRow): NormalizedBook {
     authors: row.authors ? row.authors.split(', ').filter(Boolean) : [],
     description: row.description,
     coverUrl: row.cover_url,
+    googleVolumeId: row.google_books_id,
     pageCount: row.page_count,
     publishedDate: row.published_date,
     language: row.language,
