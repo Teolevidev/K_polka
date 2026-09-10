@@ -42,19 +42,48 @@ const MIN_IMAGE_BYTES = 1024;
 type Size = 's' | 'm' | 'l';
 
 /**
- * Варианты обложки Google от крупного к мелкому.
+ * Лестница размеров обложки Google - по замерам, а не по догадке.
  *
- * Это те же адреса, что приходят в imageLinks: у них общая база и
- * различается только zoom. Какие из них существуют у конкретного тома -
- * заранее не известно, поэтому перебираем по порядку и берем первый
- * настоящий.
+ * Параметр zoom НЕ монотонный: больше значение не значит больше
+ * картинка. Замерено на томе jBiIQlevopYC («Спектр»), размеры прочитаны
+ * из заголовков самих файлов:
+ *
+ *   zoom=1  128x194     12 КБ     zoom=5 - то же самое
+ *   zoom=2  300x454     29 КБ
+ *   zoom=3  575x871     88 КБ
+ *   zoom=4  800x1211   143 КБ
+ *   zoom=0  1744x2641  532 КБ     zoom=6 - то же самое
+ *
+ * Отсюда два вывода. Первый: для карточки в выдаче нужен zoom=2, а не
+ * zoom=1 - разница в размере файла втрое, зато картинка не мыло.
+ * Второй: zoom=0 в полтора раза тяжелее всей остальной страницы, и
+ * ставить его в ленту нельзя; он остается на случай, когда понадобится
+ * действительно большая картинка.
+ *
+ * Порядок внутри размера - от нужного к запасному: если у тома
+ * какого-то варианта нет, берется следующий.
+ */
+const ZOOM_LADDER: Record<Size, number[]> = {
+  s: [2, 1],
+  m: [3, 2, 1],
+  l: [4, 3, 2],
+};
+
+/**
+ * Адреса вариантов обложки, собранные по идентификатору тома.
+ *
+ * Токен imgtk из imageLinks не нужен: замер показал, что адрес без него
+ * отдает ту же картинку. Это важнее, чем кажется - значит, обложку можно
+ * запросить, ни разу не сходив в API, и сохраненная ссылка не протухнет
+ * вместе с токеном.
+ *
+ * edge=curl тоже не ставим: он подрисовывает загнутый уголок страницы,
+ * который мы все равно срезаем кадрированием, и добавляет пару
+ * килобайт.
  */
 function googleCandidates(id: string, size: Size): string[] {
   const base = `https://books.google.com/books/content?id=${encodeURIComponent(id)}&printsec=frontcover&img=1&source=gbs_api`;
-  const zooms = size === 'l' ? [3, 2, 1] : size === 'm' ? [2, 1] : [1];
-  // edge=curl подрисовывает загнутый уголок - он нам не нужен, мы
-  // кадрируем обложку по object-cover и уголок все равно срезается.
-  return zooms.map((z) => `${base}&zoom=${z}`);
+  return ZOOM_LADDER[size].map((z) => `${base}&zoom=${z}`);
 }
 
 function openLibraryCandidates(isbn: string, size: Size): string[] {
@@ -125,12 +154,15 @@ export async function GET(req: NextRequest) {
 
   const candidates: string[] = [];
 
+  // Собранный по идентификатору адрес идет первым, а готовый - запасным.
+  // В готовом сидит токен imgtk и edge=curl: картинка та же, но тяжелее,
+  // и на нее нельзя положиться надолго. Собранный адрес стабилен.
+  if (id && VOLUME_ID.test(id)) {
+    candidates.push(...googleCandidates(id, size));
+  }
   if (direct) {
     const safe = allowedUrl(direct);
     if (safe) candidates.push(safe);
-  }
-  if (id && VOLUME_ID.test(id)) {
-    candidates.push(...googleCandidates(id, size));
   }
   if (isbn && ISBN.test(isbn)) {
     candidates.push(...openLibraryCandidates(isbn, size));

@@ -63,7 +63,10 @@ export async function findOrCreateBook(
       title: book.title,
       subtitle: book.subtitle,
       description: book.description,
-      cover_url: book.coverUrl,
+      // Свой адрес обложки не сохраняем: в нем зашит размер, а книга
+      // показывается и мелко в ленте, и крупно на странице. По ISBN и
+      // идентификатору тома он собирается заново под нужный размер.
+      cover_url: book.coverUrl?.startsWith('/') ? null : book.coverUrl,
       page_count: book.pageCount,
       published_date: toIsoDate(book.publishedDate),
       language: book.language,
