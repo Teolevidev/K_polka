@@ -7,6 +7,7 @@ import { getUserReviews } from '@/lib/reviews/queries';
 import { SignInPrompt } from '@/components/layout/sign-in-prompt';
 import { Badge } from '@/components/ui/badge';
 import { cn, plural } from '@/lib/utils';
+import { BackButton } from '@/components/layout/back-button';
 
 export const metadata: Metadata = { title: 'Мои отзывы' };
 
@@ -47,6 +48,7 @@ export default async function MyReviewsPage({ searchParams }: PageProps) {
 
   return (
     <div className="container max-w-3xl space-y-6 py-6">
+      <BackButton />
       <header className="flex flex-wrap items-baseline justify-between gap-3">
         <div>
           <h1 className="text-2xl font-semibold">Мои отзывы</h1>

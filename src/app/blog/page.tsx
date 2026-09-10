@@ -2,6 +2,8 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { PenLine } from 'lucide-react';
 import { getPublishedArticles } from '@/lib/articles/queries';
+import { isSupabaseConfigured } from '@/lib/supabase/env';
+import { PageHeader } from '@/components/layout/page-header';
 
 export const metadata: Metadata = { title: 'Блог' };
 
@@ -18,20 +20,26 @@ const KIND_LABEL: Record<string, string> = {
 };
 
 export default async function BlogPage() {
-  const articles = await getPublishedArticles();
+  // Без настроенной базы страница просто пуста, а не падает с ошибкой
+  // сервера: остальные разделы ведут себя именно так, а блог до сих пор
+  // валился с 500.
+  const articles = isSupabaseConfigured()
+    ? await getPublishedArticles().catch(() => [])
+    : [];
 
   return (
-    <div className="container max-w-3xl space-y-6 py-6">
-      <header className="space-y-1">
-        <div className="inline-flex items-center gap-2 text-sm text-muted-foreground">
-          <PenLine className="size-4" />
+    <div>
+      <PageHeader
+        title="Что почитать у нас"
+        subtitle="Колонки редактора и обзоры книг от команды Книжной полки."
+      >
+        <p className="inline-flex items-center gap-2 text-sm opacity-75">
+          <PenLine className="size-4" aria-hidden="true" />
           Блог Книжной полки
-        </div>
-        <h1 className="text-2xl font-semibold sm:text-3xl">Что почитать у нас</h1>
-        <p className="text-sm text-muted-foreground">
-          Колонки редактора и обзоры книг от команды Книжной полки.
         </p>
-      </header>
+      </PageHeader>
+
+      <div className="container max-w-3xl space-y-6 py-8">
 
       {articles.length === 0 ? (
         <p className="py-12 text-center text-muted-foreground">
@@ -69,6 +77,7 @@ export default async function BlogPage() {
           ))}
         </ul>
       )}
+      </div>
     </div>
   );
 }

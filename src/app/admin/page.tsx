@@ -10,6 +10,7 @@ import {
 import { ModerationActions } from '@/components/reviews/moderation-actions';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
+import { BackButton } from '@/components/layout/back-button';
 
 export const metadata: Metadata = { title: 'Админка' };
 
@@ -46,6 +47,7 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
 
   return (
     <div className="container max-w-4xl space-y-6 py-6">
+      <BackButton />
       <header className="flex flex-wrap items-center gap-3">
         <Shield className="size-6 text-primary" aria-hidden="true" />
         <div>

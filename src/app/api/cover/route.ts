@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { readImageSize, looksLikeCover } from '@/lib/books/image-size';
 
 /**
  * Обложки книг через наш домен.
@@ -99,6 +100,8 @@ interface Fetched {
   body: ArrayBuffer;
   contentType: string;
   url: string;
+  /** Почему картинка не подошла - уходит в заголовок ответа. */
+  reason?: string;
 }
 
 /** Скачивает картинку, если по адресу действительно картинка. */
@@ -120,6 +123,12 @@ async function fetchImage(url: string): Promise<Fetched | null> {
 
     const body = await res.arrayBuffer();
     if (body.byteLength < MIN_IMAGE_BYTES) return null;
+
+    // Каталоги под видом обложки отдают и титульные листы, и развороты.
+    // Карточка кадрирует картинку по 2:3, и такая «обложка» выглядит на
+    // экране гигантским куском буквы. Пропускаем только книжные
+    // пропорции, остальное отдаем следующему кандидату.
+    if (!looksLikeCover(readImageSize(Buffer.from(body)))) return null;
 
     return { body, contentType, url };
   } catch {
@@ -145,12 +154,91 @@ function allowedUrl(raw: string): string | null {
 const VOLUME_ID = /^[A-Za-z0-9_-]{5,32}$/;
 const ISBN = /^[0-9]{9,13}[0-9Xx]?$/;
 
+/** Кавычки внутри значения ломают операторы поиска - выкидываем их. */
+function quoted(value: string): string {
+  return `"${value.replace(/[\"«»]/g, ' ').trim().slice(0, 120)}"`;
+}
+
+/**
+ * Обложки других изданий того же произведения.
+ *
+ * Последняя попытка, когда у самого издания картинки нет. У редких
+ * книг такое сплошь и рядом: конкретный том без обложки, а у соседнего
+ * издания та же книга с нормальной картинкой. Читателю важна книга, а
+ * не то, чье именно это издание.
+ *
+ * Спрашиваем оба каталога: Google лучше знает русские издания,
+ * OpenLibrary отвечает без ключа и выручает, когда ключа нет.
+ */
+async function siblingCandidates(
+  title: string,
+  author: string | null,
+): Promise<string[]> {
+  const urls: string[] = [];
+
+  const key = process.env.GOOGLE_BOOKS_API_KEY;
+  if (key) {
+    try {
+      const q = author
+        ? `intitle:${quoted(title)} inauthor:${quoted(author)}`
+        : `intitle:${quoted(title)}`;
+      const url = new URL('https://www.googleapis.com/books/v1/volumes');
+      url.searchParams.set('q', q);
+      url.searchParams.set('maxResults', '5');
+      url.searchParams.set('printType', 'books');
+      url.searchParams.set('key', key);
+
+      const res = await fetch(url, { next: { revalidate: 86400 } });
+      if (res.ok) {
+        const data = (await res.json()) as {
+          items?: { id?: string; volumeInfo?: { imageLinks?: object } }[];
+        };
+        for (const item of data.items ?? []) {
+          // Без imageLinks у тома обложки нет - незачем и ходить.
+          if (item.id && item.volumeInfo?.imageLinks) {
+            urls.push(...googleCandidates(item.id, 'm'));
+          }
+        }
+      }
+    } catch {
+      // Соседнее издание - роскошь, а не обязанность: молча пропускаем.
+    }
+  }
+
+  try {
+    const url = new URL('https://openlibrary.org/search.json');
+    url.searchParams.set('title', title.slice(0, 120));
+    if (author) url.searchParams.set('author', author.slice(0, 80));
+    url.searchParams.set('fields', 'cover_i');
+    url.searchParams.set('limit', '5');
+
+    const res = await fetch(url, {
+      headers: { 'User-Agent': 'KnizhnayaPolka/1.0 (book club)' },
+      next: { revalidate: 86400 },
+    });
+    if (res.ok) {
+      const data = (await res.json()) as { docs?: { cover_i?: number }[] };
+      for (const doc of data.docs ?? []) {
+        if (doc.cover_i) {
+          urls.push(`https://covers.openlibrary.org/b/id/${doc.cover_i}-L.jpg`);
+        }
+      }
+    }
+  } catch {
+    // то же самое
+  }
+
+  return urls;
+}
+
 export async function GET(req: NextRequest) {
   const params = req.nextUrl.searchParams;
   const size = (params.get('size') ?? 'm') as Size;
   const id = params.get('g');
   const isbn = params.get('isbn');
   const direct = params.get('u');
+  const title = params.get('t');
+  const author = params.get('a');
 
   const candidates: string[] = [];
 
@@ -168,8 +256,15 @@ export async function GET(req: NextRequest) {
     candidates.push(...openLibraryCandidates(isbn, size));
   }
 
-  if (candidates.length === 0) {
-    return new NextResponse('нужен параметр g, isbn или u', { status: 400 });
+  if (candidates.length === 0 && !title) {
+    return new NextResponse('нужен параметр g, isbn, u или t', { status: 400 });
+  }
+
+  // Если у самого издания картинки не нашлось, ищем ее у соседних
+  // изданий того же произведения. Запрос в каталог делается только
+  // здесь, в последней попытке, - на каждую обложку так ходить нельзя.
+  if (title) {
+    candidates.push(...(await siblingCandidates(title, author)));
   }
 
   for (const candidate of candidates) {

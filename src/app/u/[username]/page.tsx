@@ -11,6 +11,7 @@ import {
 } from '@/lib/profile/queries';
 import { getUserReviews } from '@/lib/reviews/queries';
 import { getUserAchievements } from '@/lib/achievements/queries';
+import { BackButton } from '@/components/layout/back-button';
 import { FollowButton } from '@/components/profile/follow-button';
 import { AchievementsSection } from '@/components/profile/achievements-section';
 import { Avatar } from '@/components/profile/avatar';
@@ -51,6 +52,7 @@ export default async function PublicProfilePage({ params }: PageProps) {
 
   return (
     <div className="container max-w-3xl space-y-6 py-6">
+      <BackButton />
       {/* Шапка профиля */}
       <header className="flex flex-wrap items-center gap-4">
         <Avatar name={profile.display_name} src={profile.avatar_url} size="lg" />

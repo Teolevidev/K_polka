@@ -4,6 +4,7 @@ import { getCurrentUser } from '@/lib/supabase/server';
 import { getProfile, getGenres } from '@/lib/profile/queries';
 import { SignInPrompt } from '@/components/layout/sign-in-prompt';
 import { ProfileForm } from '@/components/profile/profile-form';
+import { BackButton } from '@/components/layout/back-button';
 
 export const metadata: Metadata = { title: 'Редактирование профиля' };
 
@@ -25,6 +26,7 @@ export default async function ProfileEditPage() {
   if (!profile) {
     return (
       <div className="container py-10 text-center text-muted-foreground">
+      <BackButton />
         Профиль не найден.
       </div>
     );

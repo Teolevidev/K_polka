@@ -7,6 +7,7 @@ import { getBookByRef, SourceUnavailableError } from '@/lib/books/detail';
 import type { NormalizedBook } from '@/lib/books/types';
 import { SourceUnavailableNotice } from '@/components/book/source-unavailable-notice';
 import { BookCover } from '@/components/book/book-cover';
+import { SectionBand } from '@/components/layout/section-band';
 import { AddToShelf } from '@/components/book/add-to-shelf';
 import { BookDetails } from '@/components/book/book-details';
 import { BookAvailabilityBlock } from '@/components/book/book-availability';
@@ -16,7 +17,6 @@ import {
   AuthorBooks,
   RelatedRowSkeleton,
 } from '@/components/book/related-books';
-import { Badge } from '@/components/ui/badge';
 import { plural } from '@/lib/utils';
 import { localizeGenres } from '@/lib/books/genres';
 import { isSupabaseConfigured } from '@/lib/supabase/env';
@@ -27,6 +27,7 @@ import { getBookReviews, getMyReviewForBook } from '@/lib/reviews/queries';
 import { ReviewList } from '@/components/reviews/review-list';
 import { ReviewForm } from '@/components/reviews/review-form';
 import { getReactionSummariesForTargets } from '@/lib/reactions';
+import { BackButton } from '@/components/layout/back-button';
 
 interface BookPageProps {
   params: Promise<{ ref: string }>;
@@ -108,71 +109,85 @@ export default async function BookPage({ params }: BookPageProps) {
   const genres = localizeGenres(book.genres);
 
   return (
-    <div className="container max-w-4xl space-y-10 py-6 sm:py-10">
-      {/* Шапка: обложка, название, автор, оценка, действия */}
-      <div className="grid gap-6 sm:grid-cols-[200px_1fr] sm:gap-8">
-        <div className="mx-auto w-40 space-y-3 sm:mx-0 sm:w-full">
-          <BookCover src={book.coverUrl} title={book.title} size="l" />
-          <AddToShelf
-            bookRef={ref}
-            isSignedIn={Boolean(user)}
-            currentStatus={shelfStatus}
-          />
+    <div>
+      {/* Шапка книги - на фирменной зеленой ленте, как первый экран
+          главной. Обложка, название и действие: все, ради чего сюда
+          пришли. Текстовые блоки ниже остаются на светлом - читать
+          длинное описание на плотном цвете тяжело. */}
+      <SectionBand tone="forest" className="py-8 sm:py-10">
+        <div className="mx-auto mb-3 max-w-4xl">
+          <BackButton onBand />
         </div>
-
-        <div className="space-y-5">
-          <div className="space-y-1.5">
-            <h1 className="text-2xl font-bold leading-tight sm:text-3xl">
-              {book.title}
-            </h1>
-            {book.subtitle && (
-              <p className="text-lg text-muted-foreground">{book.subtitle}</p>
-            )}
-            {book.authors.length > 0 && (
-              <p className="text-base text-muted-foreground">
-                {book.authors.join(', ')}
-              </p>
-            )}
+        <div className="mx-auto grid max-w-4xl gap-6 sm:grid-cols-[180px_1fr] sm:gap-8">
+          <div className="mx-auto w-36 space-y-3 sm:mx-0 sm:w-full">
+            <BookCover
+              src={book.coverUrl}
+              title={book.title}
+              author={book.authors[0]}
+              size="l"
+            />
+            <AddToShelf
+              bookRef={ref}
+              isSignedIn={Boolean(user)}
+              currentStatus={shelfStatus}
+            />
           </div>
 
-          {/* Внешняя оценка. Подписываем источник: шкала у нас своя,
-              1-10, и смешивать её с чужой пятибалльной нельзя. */}
-          {book.externalRating && (
-            <p className="inline-flex items-center gap-1.5 text-sm text-muted-foreground">
-              <Star className="size-4 fill-accent text-accent" aria-hidden="true" />
-              <span className="font-medium text-foreground">
-                {book.externalRating.average.toFixed(1)}
-              </span>
-              из 5 в Google Books,{' '}
-              {book.externalRating.count}{' '}
-              {plural(book.externalRating.count, 'оценка', 'оценки', 'оценок')}
+          <div className="space-y-4 text-cream">
+            <div className="space-y-1.5">
+              <h1 className="font-serif text-3xl leading-tight sm:text-4xl">
+                {book.title}
+              </h1>
+              {book.subtitle && (
+                <p className="text-lg opacity-80">{book.subtitle}</p>
+              )}
+              {book.authors.length > 0 && (
+                <p className="text-base opacity-80">{book.authors.join(', ')}</p>
+              )}
+            </div>
+
+            {/* Внешняя оценка. Подписываем источник: шкала у нас своя,
+                1-10, и смешивать ее с чужой пятибалльной нельзя. */}
+            {book.externalRating && (
+              <p className="inline-flex items-center gap-1.5 text-sm opacity-90">
+                <Star className="size-4 fill-current" aria-hidden="true" />
+                <span className="font-medium">
+                  {book.externalRating.average.toFixed(1)}
+                </span>
+                из 5 в Google Books, {book.externalRating.count}{' '}
+                {plural(book.externalRating.count, 'оценка', 'оценки', 'оценок')}
+              </p>
+            )}
+
+            {genres.length > 0 && (
+              <div className="flex flex-wrap gap-1.5">
+                {genres.slice(0, 6).map((g) => (
+                  <span
+                    key={g}
+                    className="rounded-lg bg-cream/15 px-2.5 py-1 text-xs font-medium"
+                  >
+                    {g}
+                  </span>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      </SectionBand>
+
+      <div className="container max-w-4xl space-y-10 py-8 sm:py-10">
+        <section className="space-y-2">
+          <h2 className="text-lg font-semibold">Описание</h2>
+          {book.description ? (
+            <p className="whitespace-pre-line text-sm leading-relaxed text-foreground/90">
+              {book.description}
+            </p>
+          ) : (
+            <p className="text-sm text-muted-foreground">
+              Описание пока не добавлено.
             </p>
           )}
-
-          {genres.length > 0 && (
-            <div className="flex flex-wrap gap-1.5">
-              {genres.slice(0, 6).map((g) => (
-                <Badge key={g} variant="secondary">
-                  {g}
-                </Badge>
-              ))}
-            </div>
-          )}
-
-          <div className="space-y-2">
-            <h2 className="text-lg font-semibold">Описание</h2>
-            {book.description ? (
-              <p className="whitespace-pre-line text-sm leading-relaxed text-foreground/90">
-                {book.description}
-              </p>
-            ) : (
-              <p className="text-sm text-muted-foreground">
-                Описание пока не добавлено.
-              </p>
-            )}
-          </div>
-        </div>
-      </div>
+        </section>
 
       <BookDetails book={book} />
 
@@ -213,6 +228,7 @@ export default async function BookPage({ params }: BookPageProps) {
           signinHref={`/signin?next=/book/${ref}`}
         />
       </section>
+      </div>
     </div>
   );
 }

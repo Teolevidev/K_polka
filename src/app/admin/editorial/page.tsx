@@ -7,6 +7,7 @@ import { getAllEditorialPicks } from '@/lib/editorial/queries';
 import { mondayOf } from '@/lib/editorial/week';
 import { EditorialMarker } from '@/components/admin/editorial-marker';
 import { EditorialList } from '@/components/admin/editorial-list';
+import { BackButton } from '@/components/layout/back-button';
 
 export const metadata: Metadata = { title: 'Выбор администратора' };
 
@@ -19,6 +20,7 @@ export default async function EditorialAdminPage() {
 
   return (
     <div className="container max-w-3xl space-y-6 py-6">
+      <BackButton />
       <header className="flex items-center gap-3">
         <BookMarked className="size-6 text-primary" aria-hidden="true" />
         <div>

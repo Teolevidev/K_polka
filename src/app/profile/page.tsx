@@ -14,11 +14,13 @@ import {
   getSuggestedBooks,
 } from '@/lib/social/queries';
 
+import { BackButton } from '@/components/layout/back-button';
 import { SignInPrompt } from '@/components/layout/sign-in-prompt';
 import { StatsDashboard } from '@/components/profile/stats-dashboard';
 import { GoalSetter } from '@/components/profile/goal-setter';
 import { AchievementsSection } from '@/components/profile/achievements-section';
 import { Avatar } from '@/components/profile/avatar';
+import { SectionBand } from '@/components/layout/section-band';
 import { SignOutButton } from '@/components/auth/sign-out-button';
 import {
   AddBookBox,
@@ -70,54 +72,62 @@ export default async function ProfilePage() {
   const displayName = profile?.display_name ?? user.email?.split('@')[0] ?? 'Читатель';
 
   return (
-    <div className="container max-w-5xl space-y-6 py-6">
-      {/* Шапка профиля */}
-      <div className="flex flex-wrap items-center gap-4">
-        <Avatar name={displayName} src={profile?.avatar_url} size="lg" />
-        <div className="min-w-0 flex-1">
-          <h1 className="text-2xl font-semibold leading-tight">{displayName}</h1>
-          {profile?.username && (
-            <p className="text-sm text-muted-foreground">
-              @{profile.username}
-              <Link
-                href={`/u/${profile.username}`}
-                className="ml-2 text-primary hover:underline"
-              >
-                посмотреть как видят другие
-              </Link>
+    <div>
+      {/* Шапка профиля - на той же зеленой ленте, что и первый экран
+          главной: это личная обложка читателя. */}
+      <SectionBand tone="forest" className="py-8 sm:py-10">
+        <div className="mx-auto mb-3 max-w-5xl">
+          <BackButton onBand />
+        </div>
+        <div className="mx-auto flex max-w-5xl flex-wrap items-center gap-4 text-cream">
+          <Avatar name={displayName} src={profile?.avatar_url} size="lg" />
+          <div className="min-w-0 flex-1">
+            <h1 className="font-serif text-2xl leading-tight sm:text-3xl">
+              {displayName}
+            </h1>
+            {profile?.username && (
+              <p className="text-sm opacity-80">
+                @{profile.username}
+                <Link
+                  href={`/u/${profile.username}`}
+                  className="ml-2 underline underline-offset-4 hover:no-underline"
+                >
+                  посмотреть как видят другие
+                </Link>
+              </p>
+            )}
+            <p className="mt-2 flex flex-wrap gap-x-4 text-sm opacity-90">
+              <span>
+                <strong>{formatNumber(counts.followers)}</strong>{' '}
+                {plural(counts.followers, 'подписчик', 'подписчика', 'подписчиков')}
+              </span>
+              <span>
+                <strong>{formatNumber(counts.following)}</strong> подписок
+              </span>
+              <span>
+                <strong>{formatNumber(reviews.length)}</strong>{' '}
+                {plural(reviews.length, 'отзыв', 'отзыва', 'отзывов')}
+              </span>
             </p>
-          )}
-          <p className="text-sm text-muted-foreground">{user.email}</p>
-          <p className="mt-1 flex flex-wrap gap-x-3 text-sm text-muted-foreground">
-            <span>
-              <strong className="text-foreground">{formatNumber(counts.followers)}</strong>{' '}
-              {plural(counts.followers, 'подписчик', 'подписчика', 'подписчиков')}
-            </span>
-            <span>
-              <strong className="text-foreground">{formatNumber(counts.following)}</strong>{' '}
-              подписок
-            </span>
-            <span>
-              <strong className="text-foreground">{formatNumber(reviews.length)}</strong>{' '}
-              {plural(reviews.length, 'отзыв', 'отзыва', 'отзывов')}
-            </span>
-          </p>
+            {profile?.bio && (
+              <p className="mt-3 max-w-2xl text-sm leading-relaxed opacity-90">
+                {profile.bio}
+              </p>
+            )}
+          </div>
+          <div className="flex gap-2">
+            <Button variant="onBand" size="sm" asChild>
+              <Link href="/profile/edit">
+                <Pencil className="size-4" />
+                Редактировать
+              </Link>
+            </Button>
+            <SignOutButton />
+          </div>
         </div>
-        <div className="flex gap-2">
-          <Button variant="outline" size="sm" asChild>
-            <Link href="/profile/edit">
-              <Pencil className="size-4" />
-              Редактировать
-            </Link>
-          </Button>
-          <SignOutButton />
-        </div>
-      </div>
+      </SectionBand>
 
-      {profile?.bio && (
-        <p className="text-sm leading-relaxed text-foreground/90">{profile.bio}</p>
-      )}
-
+      <div className="container max-w-5xl space-y-6 py-8">
       <StatsDashboard stats={stats} />
 
       {/* Две колонки: слева свое чтение, справа клуб. Так устроен
@@ -164,6 +174,7 @@ export default async function ProfilePage() {
         <Button variant="outline" asChild>
           <Link href="/search">Найти книгу</Link>
         </Button>
+      </div>
       </div>
     </div>
   );

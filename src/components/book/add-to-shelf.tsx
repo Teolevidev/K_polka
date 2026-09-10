@@ -71,7 +71,9 @@ export function AddToShelf({
       <div className="relative">
         <Button
           className="w-full"
-          variant={active ? 'secondary' : 'default'}
+          // Кнопка стоит на зеленой ленте, поэтому обе заливки светлые:
+          // темная таблетка на темно-зеленом почти не читается.
+          variant={active ? 'secondary' : 'onBand'}
           onClick={() => setOpen((v) => !v)}
           disabled={pending}
           aria-haspopup="menu"
