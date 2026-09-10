@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
-import { LogoMark } from './logo';
+import { ShelfIllustration } from './logo';
 
 interface SignInPromptProps {
   title: string;
@@ -13,7 +13,7 @@ export function SignInPrompt({ title, description, next }: SignInPromptProps) {
   const href = next ? `/signin?next=${encodeURIComponent(next)}` : '/signin';
   return (
     <div className="container flex min-h-[55vh] flex-col items-center justify-center gap-4 text-center">
-      <LogoMark className="h-11 w-11 opacity-50" />
+      <ShelfIllustration className="max-w-[200px]" />
       <div className="space-y-1">
         <h1 className="text-2xl font-semibold">{title}</h1>
         <p className="max-w-md text-muted-foreground">{description}</p>
