@@ -8,6 +8,7 @@ import { getComments } from '@/lib/comments';
 import { getReactionSummary } from '@/lib/reactions';
 import { ReactionButtons } from '@/components/reactions/reaction-buttons';
 import { CommentThread } from '@/components/comments/comment-thread';
+import { BackButton } from '@/components/layout/back-button';
 
 interface PageProps {
   params: Promise<{ slug: string }>;
@@ -56,6 +57,7 @@ export default async function ArticlePage({ params }: PageProps) {
 
   return (
     <div className="container max-w-3xl space-y-6 py-6">
+      <BackButton />
       <Link
         href="/blog"
         className="text-sm font-medium text-primary hover:underline"

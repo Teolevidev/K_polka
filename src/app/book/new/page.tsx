@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { ManualBookForm } from '@/components/book/manual-book-form';
 import { isSupabaseConfigured } from '@/lib/supabase/env';
 import { getCurrentUser } from '@/lib/supabase/server';
+import { PageHeader } from '@/components/layout/page-header';
 
 export const metadata: Metadata = { title: 'Добавить книгу вручную' };
 
@@ -17,21 +18,19 @@ export default async function NewBookPage({ searchParams }: NewBookPageProps) {
   const user = isSupabaseConfigured() ? await getCurrentUser() : null;
 
   return (
-    <div className="container max-w-2xl space-y-6 py-8">
-      <div className="space-y-2">
-        <h1 className="text-2xl font-semibold">Добавить книгу вручную</h1>
-        <p className="text-muted-foreground">
-          Внешние каталоги плохо знают русскую литературу. Если книги там нет —
-          заведите её сами: она попадёт в общий каталог клуба и станет
-          находиться в поиске у всех.
-        </p>
+    <div>
+      <PageHeader
+        title="Добавить книгу вручную"
+        subtitle="Внешние каталоги плохо знают русскую литературу. Если книги там нет - заведите ее сами: она попадет в общий каталог клуба и станет находиться в поиске у всех."
+      >
         {q && (
-          <p className="text-sm text-muted-foreground">
-            Вы искали <span className="font-medium text-foreground">«{q}»</span> и
-            ничего не нашли.
+          <p className="text-sm opacity-75">
+            Вы искали «{q}» и ничего не нашли.
           </p>
         )}
-      </div>
+      </PageHeader>
+
+      <div className="container max-w-2xl space-y-6 py-8">
 
       {!user ? (
         <div className="flex items-start gap-3 rounded-lg border border-border bg-secondary/50 p-4 text-sm">
@@ -55,6 +54,7 @@ export default async function NewBookPage({ searchParams }: NewBookPageProps) {
           Вернуться к поиску
         </Link>
       </p>
+      </div>
     </div>
   );
 }

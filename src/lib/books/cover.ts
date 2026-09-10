@@ -21,8 +21,18 @@ export type CoverSize = 's' | 'm' | 'l';
 
 type CoverFields = Pick<
   NormalizedBook,
-  'coverUrl' | 'isbn13' | 'isbn10' | 'source' | 'sourceId' | 'googleVolumeId'
+  | 'coverUrl'
+  | 'isbn13'
+  | 'isbn10'
+  | 'source'
+  | 'sourceId'
+  | 'googleVolumeId'
+  | 'title'
+  | 'authors'
 >;
+
+/** Длина, после которой название в запросе только мешает. */
+const MAX_QUERY_LEN = 120;
 
 /** true, если картинку с этого адреса имеет смысл гнать через себя. */
 export function isProxiedHost(url: string): boolean {
@@ -65,8 +75,17 @@ export function resolveCoverUrl(
   const isbn = book.isbn13 ?? book.isbn10;
   if (isbn) params.set('isbn', cleanIsbn(isbn));
 
+  // Название и автор - последняя зацепка: по ним маршрут найдет обложку
+  // у другого издания того же произведения. У редких книг это
+  // единственное, что вообще есть.
+  if (book.title) params.set('t', book.title.slice(0, MAX_QUERY_LEN));
+  const author = book.authors?.[0];
+  if (author) params.set('a', author.slice(0, MAX_QUERY_LEN));
+
   // Просить нечего - покажем плейсхолдер с названием.
-  if (!params.has('u') && !params.has('g') && !params.has('isbn')) return null;
+  if (!params.has('u') && !params.has('g') && !params.has('isbn') && !params.has('t')) {
+    return null;
+  }
 
   params.set('size', size);
   return `/api/cover?${params.toString()}`;
@@ -85,9 +104,23 @@ export function resolveCoverUrl(
 export function proxiedCoverUrl(
   url: string | null | undefined,
   size: CoverSize = 'm',
+  title?: string | null,
+  author?: string | null,
 ): string | null {
-  if (!url) return null;
+  // Даже без готовой ссылки обложку можно найти по названию и автору -
+  // у соседнего издания того же произведения.
+  if (!url) {
+    if (!title) return null;
+    const params = new URLSearchParams({ t: title.slice(0, MAX_QUERY_LEN), size });
+    if (author) params.set('a', author.slice(0, MAX_QUERY_LEN));
+    return `/api/cover?${params.toString()}`;
+  }
+
   if (url.startsWith('/')) return url;
   if (!isProxiedHost(url)) return url;
-  return `/api/cover?u=${encodeURIComponent(url)}&size=${size}`;
+
+  const params = new URLSearchParams({ u: url, size });
+  if (title) params.set('t', title.slice(0, MAX_QUERY_LEN));
+  if (author) params.set('a', author.slice(0, MAX_QUERY_LEN));
+  return `/api/cover?${params.toString()}`;
 }

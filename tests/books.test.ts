@@ -37,6 +37,7 @@ import {
 } from '@/lib/books/isbn';
 import { encodeBookRef, decodeBookRef } from '@/lib/books/ref';
 import { localizeGenre, localizeGenres } from '@/lib/books/genres';
+import { readImageSize, looksLikeCover } from '@/lib/books/image-size';
 import { isTransientStatus, SourceUnavailableError } from '@/lib/books/detail';
 
 describe('normalizeText', () => {
@@ -755,5 +756,72 @@ describe('обложка книги из своего каталога', () => {
     );
     expect(url).toContain('g=jBiIQlevopYC');
     expect(url).toContain('size=l');
+  });
+});
+
+describe('пропорции обложки', () => {
+  // Заголовок JPEG: FFD8 + сегмент SOF0 с размерами.
+  function jpeg(width: number, height: number): Buffer {
+    const buf = Buffer.alloc(20);
+    buf[0] = 0xff;
+    buf[1] = 0xd8;
+    buf[2] = 0xff;
+    buf[3] = 0xc0;
+    buf.writeUInt16BE(11, 4); // длина сегмента
+    buf[6] = 8; // точность
+    buf.writeUInt16BE(height, 7);
+    buf.writeUInt16BE(width, 9);
+    return buf;
+  }
+
+  it('размеры читаются из заголовка JPEG', () => {
+    expect(readImageSize(jpeg(800, 1211))).toEqual({ width: 800, height: 1211 });
+  });
+
+  it('обычная книжная обложка проходит', () => {
+    expect(looksLikeCover({ width: 800, height: 1211 })).toBe(true);
+    expect(looksLikeCover({ width: 300, height: 454 })).toBe(true);
+  });
+
+  it('широкий разворот отвергается', () => {
+    // Именно из-за таких на карточке появлялся гигантский кусок буквы:
+    // кадрирование по 2:3 вырезает из разворота случайный лоскут.
+    expect(looksLikeCover({ width: 1200, height: 400 })).toBe(false);
+  });
+
+  it('слишком вытянутая полоска отвергается', () => {
+    expect(looksLikeCover({ width: 200, height: 900 })).toBe(false);
+  });
+
+  it('крошечная картинка отвергается', () => {
+    expect(looksLikeCover({ width: 40, height: 60 })).toBe(false);
+  });
+
+  it('неразобранный формат не отвергаем - лучше показать, чем потерять', () => {
+    expect(looksLikeCover(null)).toBe(true);
+    expect(readImageSize(Buffer.from('не картинка'))).toBeNull();
+  });
+});
+
+describe('обложка по названию, когда ссылки нет', () => {
+  it('запрос собирается из названия и автора', () => {
+    const url = proxiedCoverUrl(null, 'm', 'Мастер и Маргарита', 'Михаил Булгаков');
+    expect(url).toContain('t=');
+    expect(url).toContain('a=');
+  });
+
+  it('без названия просить нечего', () => {
+    expect(proxiedCoverUrl(null, 'm', null)).toBeNull();
+  });
+
+  it('к готовой ссылке название добавляется запасным вариантом', () => {
+    const url = proxiedCoverUrl(
+      'https://covers.openlibrary.org/b/id/1-M.jpg',
+      'm',
+      'Спектр',
+      'Сергей Лукьяненко',
+    );
+    expect(url).toContain('u=');
+    expect(url).toContain('t=');
   });
 });

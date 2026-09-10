@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { readImageSize, looksLikeCover } from '@/lib/books/image-size';
 import { requireApiKey, GoogleBooksNotConfiguredError } from '@/lib/books/google';
 import {
   type GoogleVolume,
@@ -31,49 +32,6 @@ import {
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
-/**
- * Размер картинки из ее собственного заголовка.
- *
- * Content-Length говорит про байты, а нам нужны пиксели: только по ним
- * видно, отличается ли zoom=3 от zoom=1 на самом деле или Google отдает
- * одну и ту же картинку под разными адресами.
- */
-function imageSize(buf: Buffer): { width: number; height: number } | null {
-  // PNG: ширина и высота лежат в IHDR сразу после подписи.
-  if (buf.length > 24 && buf.toString('ascii', 1, 4) === 'PNG') {
-    return { width: buf.readUInt32BE(16), height: buf.readUInt32BE(20) };
-  }
-
-  // GIF: little-endian, сразу после версии.
-  if (buf.length > 10 && buf.toString('ascii', 0, 3) === 'GIF') {
-    return { width: buf.readUInt16LE(6), height: buf.readUInt16LE(8) };
-  }
-
-  // JPEG: идем по сегментам до маркера SOF, в нем и лежат размеры.
-  if (buf.length > 4 && buf[0] === 0xff && buf[1] === 0xd8) {
-    let offset = 2;
-    while (offset + 9 < buf.length) {
-      if (buf[offset] !== 0xff) {
-        offset += 1;
-        continue;
-      }
-      const marker = buf[offset + 1];
-      // SOF0..SOF15, кроме DHT (c4), JPGA (c8) и DAC (cc).
-      const isSof =
-        marker >= 0xc0 && marker <= 0xcf && ![0xc4, 0xc8, 0xcc].includes(marker);
-      if (isSof) {
-        return {
-          height: buf.readUInt16BE(offset + 5),
-          width: buf.readUInt16BE(offset + 7),
-        };
-      }
-      offset += 2 + buf.readUInt16BE(offset + 2);
-    }
-  }
-
-  return null;
-}
-
 interface Probe {
   url: string;
   status: number | null;
@@ -97,15 +55,16 @@ async function probeCover(url: string): Promise<Probe> {
     }
 
     const buf = Buffer.from(await res.arrayBuffer());
-    const size = imageSize(buf);
+    const size = readImageSize(buf);
     return {
       url,
       status: res.status,
       contentType,
       bytes: buf.byteLength,
       pixels: size ? `${size.width}x${size.height}` : null,
-      note:
-        buf.byteLength < 1024
+      note: !looksLikeCover(size)
+        ? 'пропорции не книжные - маршрут обложек такую картинку отвергнет'
+        : buf.byteLength < 1024
           ? 'меньше килобайта - это заглушка, а не обложка'
           : undefined,
     };

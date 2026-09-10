@@ -4,6 +4,7 @@ import { notFound, redirect } from 'next/navigation';
 import { getAdminContext } from '@/lib/admin/auth';
 import { getArticleById } from '@/lib/articles/queries';
 import { ArticleEditor } from '@/components/admin/article-editor';
+import { BackButton } from '@/components/layout/back-button';
 
 export const metadata: Metadata = { title: 'Редактирование статьи' };
 
@@ -21,6 +22,7 @@ export default async function EditArticlePage({ params }: PageProps) {
 
   return (
     <div className="container max-w-3xl space-y-5 py-6">
+      <BackButton />
       <header>
         <Link
           href="/admin/articles"

@@ -7,6 +7,7 @@ import { detectQueryKind } from '@/lib/books/isbn';
 import { SearchResultsView } from '@/components/book/search-results-view';
 import { Button } from '@/components/ui/button';
 import { plural } from '@/lib/utils';
+import { PageHeader } from '@/components/layout/page-header';
 
 export const metadata: Metadata = { title: 'Поиск книг' };
 
@@ -35,15 +36,16 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
   const kind = detectQueryKind(query);
 
   return (
-    <div className="container space-y-6 py-6">
-      {/* Поле поиска только одно - в шапке. Здесь остаётся подсказка:
-          она стоит сразу под ним и объясняет, что можно вводить. */}
-      <div className="mx-auto max-w-xl space-y-1 text-center">
-        <h1 className="text-2xl font-semibold">Поиск книг</h1>
-        <p className="text-sm text-muted-foreground">
-          Ищите по названию, автору или ISBN. Поиск понимает опечатки.
-        </p>
-      </div>
+    <div>
+      {/* Поле поиска только одно - в шапке приложения. Здесь остается
+          подсказка: она объясняет, что можно вводить. */}
+      <PageHeader
+        title={hasQuery ? `Поиск: «${query}»` : 'Поиск книг'}
+        subtitle="Ищите по названию, автору или ISBN. Поиск понимает опечатки."
+        compact
+      />
+
+      <div className="container space-y-6 py-8">
 
       {!hasQuery && (
         <p className="py-10 text-center text-muted-foreground">
@@ -128,6 +130,7 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
           )}
         </div>
       )}
+      </div>
     </div>
   );
 }

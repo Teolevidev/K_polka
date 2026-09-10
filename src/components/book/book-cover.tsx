@@ -12,6 +12,11 @@ interface BookCoverProps {
   sizes?: string;
   /** Насколько крупная нужна картинка. */
   size?: CoverSize;
+  /**
+   * Автор - чтобы найти обложку у другого издания, если у этого ее нет.
+   * Без автора поиск по одному названию притаскивает чужие книги.
+   */
+  author?: string | null;
 }
 
 /**
@@ -19,12 +24,18 @@ interface BookCoverProps {
  * Если изображения нет или оно не загрузилось — рисуем плейсхолдер
  * с инициалами названия.
  */
-export function BookCover({ src, title, className, size = 'm' }: BookCoverProps) {
+export function BookCover({
+  src,
+  title,
+  className,
+  size = 'm',
+  author,
+}: BookCoverProps) {
   const [failed, setFailed] = useState(false);
   // Чужие обложки идут через наш маршрут, где бы ни был взят адрес:
   // из поиска, из базы или из витрины главной. Одно место на все
   // приложение - иначе каждый новый экран заводит свою дырку.
-  const url = proxiedCoverUrl(src, size);
+  const url = proxiedCoverUrl(src, size, title, author);
   const showImage = url && !failed;
 
   return (

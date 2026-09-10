@@ -7,6 +7,7 @@ import { getMembers } from '@/lib/social/queries';
 import { Avatar } from '@/components/profile/avatar';
 import { FollowButton } from '@/components/profile/follow-button';
 import { InviteFriend } from '@/components/profile/invite-friend';
+import { PageHeader } from '@/components/layout/page-header';
 
 export const metadata: Metadata = { title: 'Участники' };
 
@@ -15,14 +16,13 @@ export default async function PeoplePage() {
   const members = isSupabaseConfigured() ? await getMembers(user?.id ?? null) : [];
 
   return (
-    <div className="container max-w-3xl space-y-6 py-8">
-      <div className="space-y-2">
-        <h1 className="font-serif text-2xl leading-tight sm:text-3xl">Участники</h1>
-        <p className="text-muted-foreground">
-          Подпишитесь на тех, чей вкус вам близок: их полки и отзывы появятся
-          в вашей ленте.
-        </p>
-      </div>
+    <div>
+      <PageHeader
+        title="Участники"
+        subtitle="Подпишитесь на тех, чей вкус вам близок: их полки и отзывы появятся в вашей ленте."
+      />
+
+      <div className="container max-w-3xl space-y-6 py-8">
 
       {members.length === 0 ? (
         <div className="flex flex-col items-center gap-3 rounded-lg border-2 border-dashed border-border p-10 text-center">
@@ -68,6 +68,7 @@ export default async function PeoplePage() {
           ))}
         </ul>
       )}
+      </div>
     </div>
   );
 }

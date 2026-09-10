@@ -34,6 +34,7 @@ export function BookCard({ book, className }: BookCardProps) {
         <BookCover
           src={book.coverUrl}
           title={book.title}
+          author={book.authors[0]}
           size="s"
           className="transition-transform duration-200 group-hover:-translate-y-1"
         />
