@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import { AlertCircle } from 'lucide-react';
 import { SignInForm } from '@/components/auth/sign-in-form';
-import { LogoMark } from '@/components/layout/logo';
+import { ShelfIllustration } from '@/components/layout/logo';
 import { SectionBand } from '@/components/layout/section-band';
 import { FAILURE_MESSAGES, parseFailure } from '@/lib/auth/failure';
 
@@ -19,7 +19,7 @@ export default async function SignInPage({ searchParams }: SignInPageProps) {
   return (
     <SectionBand tone="forest" className="min-h-[75vh]">
       <div className="mx-auto flex max-w-md flex-col items-center">
-        <LogoMark className="h-11 w-11" />
+        <ShelfIllustration className="max-w-[220px]" />
 
         <h1 className="text-display-sm mt-6 text-center font-serif">
           Вход в Книжную полку

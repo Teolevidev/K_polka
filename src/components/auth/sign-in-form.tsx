@@ -12,7 +12,7 @@ type Status = 'idle' | 'sending' | 'sent' | 'error';
 interface SignInFormProps {
   /** Путь для возврата после входа. */
   next?: string;
-  /** Включён ли вход через Apple (feature flag). */
+  /** Включен ли вход через Apple (feature flag). */
   appleEnabled?: boolean;
 }
 
@@ -41,7 +41,7 @@ export function SignInForm({ next = '/profile', appleEnabled = false }: SignInFo
       setStatus('sent');
     } catch {
       setStatus('error');
-      setMessage('Не удалось отправить ссылку. Попробуйте ещё раз.');
+      setMessage('Не удалось отправить ссылку. Попробуйте еще раз.');
     }
   }
 
@@ -72,7 +72,7 @@ export function SignInForm({ next = '/profile', appleEnabled = false }: SignInFo
       <div className="flex items-start gap-3 rounded-md border border-border bg-secondary/50 p-4 text-sm">
         <AlertTriangle className="mt-0.5 size-5 shrink-0 text-accent" />
         <div>
-          <p className="font-medium">Вход пока не подключён</p>
+          <p className="font-medium">Вход пока не подключен</p>
           <p className="mt-1 text-muted-foreground">
             Чтобы включить авторизацию, задайте переменные{' '}
             <code className="rounded bg-background px-1">NEXT_PUBLIC_SUPABASE_URL</code>{' '}
@@ -80,7 +80,7 @@ export function SignInForm({ next = '/profile', appleEnabled = false }: SignInFo
             <code className="rounded bg-background px-1">
               NEXT_PUBLIC_SUPABASE_ANON_KEY
             </code>{' '}
-            — см. файл .env.example и инструкцию по развёртыванию.
+            - см. файл .env.example и инструкцию по развертыванию.
           </p>
         </div>
       </div>
