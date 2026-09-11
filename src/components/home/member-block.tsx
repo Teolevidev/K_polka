@@ -2,6 +2,8 @@ import Link from 'next/link';
 import { Library, Target, ArrowRight, BookMarked, Star, Flame } from 'lucide-react';
 import { type ReadingStats, goalProgress } from '@/lib/stats';
 import { plural, formatNumber } from '@/lib/utils';
+import { LeafPattern } from '@/components/layout/leaf-pattern';
+import { Button } from '@/components/ui/button';
 
 interface HomeMemberBlockProps {
   /** Имя пользователя, если он вошёл; иначе null. */
@@ -56,7 +58,7 @@ function MemberStats({ userName, stats }: { userName: string; stats: ReadingStat
 
   return (
     <section>
-      <div className="rounded-lg bg-background text-foreground p-5 shadow-lift sm:p-6">
+      <div className="rounded-card bg-card p-5 text-card-foreground sm:p-6">
         <div className="mb-4 flex items-center justify-between gap-4">
           <h2 className="text-xl font-semibold sm:text-2xl">
             С возвращением, {userName}
@@ -128,22 +130,30 @@ function GuestInvitation() {
 
   return (
     <section>
-      <div className="rounded-lg bg-background text-foreground p-5 shadow-lift sm:p-6">
-        <div className="mb-4 flex items-center justify-between gap-4">
+      {/* Тот же зеленый и тот же узор, что у первого экрана: блок
+          зовет в клуб, и выглядеть он должен как клуб, а не как
+          бежевая справка сбоку. */}
+      <div className="rounded-card relative isolate overflow-hidden bg-forest p-6 text-cream sm:p-8">
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute inset-0 -z-10 text-cream"
+          style={{ opacity: 'var(--pattern-opacity)' }}
+        >
+          <LeafPattern className="h-full w-full" />
+        </div>
+
+        <div className="mb-5 flex items-center justify-between gap-4">
           <div>
-            <h2 className="text-xl font-semibold sm:text-2xl">
+            <h2 className="font-serif text-2xl leading-tight sm:text-3xl">
               Заведите свою полку
             </h2>
-            <p className="mt-0.5 text-sm text-muted-foreground">
-              Бесплатно. Личная статистика, цели и достижения — для тех, кто вошёл.
+            <p className="mt-1 text-sm opacity-80">
+              Бесплатно. Личная статистика, цели и достижения - для тех, кто вошел.
             </p>
           </div>
-          <Link
-            href="/signin"
-            className="hidden shrink-0 items-center gap-1 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90 sm:inline-flex"
-          >
-            Присоединиться
-          </Link>
+          <Button variant="onBand" size="sm" asChild className="hidden shrink-0 sm:inline-flex">
+            <Link href="/signin">Присоединиться</Link>
+          </Button>
         </div>
 
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
@@ -151,9 +161,9 @@ function GuestInvitation() {
             <Link
               key={title}
               href={href}
-              className="group rounded-lg bg-secondary p-4 transition-colors hover:bg-secondary/70"
+              className="group rounded-lg bg-cream/10 p-4 transition-colors hover:bg-cream/20"
             >
-              <div className="mb-2 flex size-9 items-center justify-center rounded-md bg-primary/10 text-primary">
+              <div className="mb-2 flex size-9 items-center justify-center rounded-md bg-cream/15">
                 <Icon className="size-5" aria-hidden="true" />
               </div>
               <h3 className="flex items-center gap-1 text-sm font-semibold">
@@ -163,17 +173,14 @@ function GuestInvitation() {
                   aria-hidden="true"
                 />
               </h3>
-              <p className="mt-0.5 text-xs text-muted-foreground">{text}</p>
+              <p className="mt-1 text-xs opacity-80">{text}</p>
             </Link>
           ))}
         </div>
 
-        <Link
-          href="/signin"
-          className="mt-4 inline-flex w-full items-center justify-center gap-1 rounded-md bg-primary px-4 py-2.5 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90 sm:hidden"
-        >
-          Присоединиться
-        </Link>
+        <Button variant="onBand" asChild className="mt-4 w-full sm:hidden">
+          <Link href="/signin">Присоединиться</Link>
+        </Button>
       </div>
     </section>
   );
