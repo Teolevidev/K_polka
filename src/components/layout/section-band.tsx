@@ -31,6 +31,8 @@ const TONES: Record<BandTone, string> = {
 interface SectionBandProps {
   tone?: BandTone;
   className?: string;
+  /** Якорь для ссылок из меню. */
+  id?: string;
   /** Содержимое во всю ширину ленты, без ограничения в 1200px. */
   bleed?: boolean;
   children: React.ReactNode;
@@ -39,6 +41,7 @@ interface SectionBandProps {
 export function SectionBand({
   tone = 'white',
   className,
+  id,
   bleed = false,
   children,
 }: SectionBandProps) {
@@ -49,6 +52,7 @@ export function SectionBand({
 
   return (
     <section
+      id={id}
       className={cn('band', TONES[tone], patterned && 'relative isolate', className)}
     >
       {patterned && (

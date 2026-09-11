@@ -8,11 +8,26 @@ import { isSupabaseConfigured } from '@/lib/supabase/env';
 import { getCurrentUser } from '@/lib/supabase/server';
 import { getAdminContext } from '@/lib/admin/auth';
 
-const NAV_LINKS = [
+/**
+ * Публичное меню - только то, что имеет смысл для гостя.
+ *
+ * Раньше здесь стояло «Блог / Обзор / Моя полка»: смесь гостевого и
+ * приватного. «Моя полка» посреди публичной навигации обещает
+ * незалогиненному то, чего он не увидит, и уводит его в продуктовый
+ * сценарий вместо вступления в клуб.
+ *
+ * Первые два пункта ведут на секции лендинга: отдельных страниц под
+ * них пока нет, а рассказ о клубе весь на главной.
+ */
+const PUBLIC_NAV = [
+  { href: '/#how', label: 'Как это работает' },
+  { href: '/#club', label: 'Клуб' },
+  { href: '/discover', label: 'Обзор книг' },
   { href: '/blog', label: 'Блог' },
-  { href: '/discover', label: 'Обзор' },
-  { href: '/library', label: 'Моя полка' },
 ];
+
+/** Приватные разделы - показываются только вошедшему. */
+const MEMBER_NAV = [{ href: '/library', label: 'Моя полка' }];
 
 /**
  * Верхняя шапка: логотип слева, ссылки по центру, аккаунт справа.
@@ -38,33 +53,51 @@ export async function Header() {
         </div>
 
         <nav className="ml-auto flex items-center gap-1">
-          {NAV_LINKS.map(({ href, label }) => (
+          {PUBLIC_NAV.map(({ href, label }) => (
             <Link
               key={href}
               href={href}
-              className="hidden px-3 text-sm font-medium underline-offset-4 hover:underline sm:inline-flex"
+              className="hidden px-3 text-sm font-medium underline-offset-4 hover:underline lg:inline-flex"
             >
               {label}
             </Link>
           ))}
+
+          {/* Приватные пункты - только вошедшему. */}
+          {signedIn &&
+            MEMBER_NAV.map(({ href, label }) => (
+              <Link
+                key={href}
+                href={href}
+                className="hidden px-3 text-sm font-medium underline-offset-4 hover:underline lg:inline-flex"
+              >
+                {label}
+              </Link>
+            ))}
+
           {admin && (
             <Link
               href="/admin"
-              className="hidden px-3 text-sm font-medium underline-offset-4 hover:underline sm:inline-flex"
+              className="hidden px-3 text-sm font-medium underline-offset-4 hover:underline lg:inline-flex"
             >
               Админка
             </Link>
           )}
-          <ThemeToggle />
-          {signedIn ? (
-            <Button size="sm" asChild>
-              <Link href="/profile">Профиль</Link>
-            </Button>
-          ) : (
-            <Button size="sm" asChild>
-              <Link href="/signin">Войти</Link>
-            </Button>
-          )}
+
+          {/* Тема и вход - отдельная группа справа, с отбивкой от меню:
+              иначе луна читается как еще один пункт навигации. */}
+          <span className="ml-2 flex items-center gap-2 border-l border-border pl-3">
+            <ThemeToggle />
+            {signedIn ? (
+              <Button size="sm" asChild>
+                <Link href="/profile">Профиль</Link>
+              </Button>
+            ) : (
+              <Button size="sm" asChild>
+                <Link href="/signin">Войти</Link>
+              </Button>
+            )}
+          </span>
         </nav>
       </div>
 

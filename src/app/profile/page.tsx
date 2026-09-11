@@ -7,6 +7,7 @@ import { getProfile, getFollowCounts } from '@/lib/profile/queries';
 import { getReadingStats, getUserShelfBooks } from '@/lib/shelf/queries';
 import { getUserReviews } from '@/lib/reviews/queries';
 import { getUserAchievements } from '@/lib/achievements/queries';
+import { getActivePoll } from '@/lib/polls';
 import {
   getActivityFeed,
   getSimilarReaders,
@@ -29,8 +30,10 @@ import {
   MemberShelves,
   SuggestedBooks,
 } from '@/components/profile/dashboard-blocks';
+import { RecommendationBlock } from '@/components/home/recommendation-block';
+import { PollWidget } from '@/components/polls/poll-widget';
 import { Button } from '@/components/ui/button';
-import { formatNumber, plural } from '@/lib/utils';
+import { formatNumber, plural, cn } from '@/lib/utils';
 
 export const metadata: Metadata = { title: 'Профиль' };
 
@@ -49,8 +52,18 @@ export default async function ProfilePage() {
 
   // Все блоки кабинета независимы друг от друга, поэтому грузятся
   // разом: последовательно страница ждала бы сумму всех обращений.
-  const [profile, stats, counts, reviews, achievements, shelf, feed, shelves, suggested] =
-    await Promise.all([
+  const [
+    profile,
+    stats,
+    counts,
+    reviews,
+    achievements,
+    shelf,
+    feed,
+    shelves,
+    suggested,
+    poll,
+  ] = await Promise.all([
       getProfile(user.id),
       getReadingStats(user.id),
       getFollowCounts(user.id),
@@ -60,6 +73,7 @@ export default async function ProfilePage() {
       getActivityFeed(user.id).catch(() => []),
       getMemberShelves(user.id).catch(() => []),
       getSuggestedBooks(user.id).catch(() => []),
+      getActivePoll().catch(() => null),
     ]);
 
   // Похожий вкус считается по любимым жанрам, а их знает только профиль,
@@ -129,6 +143,15 @@ export default async function ProfilePage() {
 
       <div className="container max-w-5xl space-y-6 py-8">
       <StatsDashboard stats={stats} />
+
+      {/* Рекомендация и опрос переехали сюда с публичной главной.
+          Гостю они ничего не говорили: советовать книгу и спрашивать
+          мнение имеет смысл у того, кто уже в клубе. Парой, а не в
+          колонку - это два коротких действия. */}
+      <div className={cn('grid gap-4', poll ? 'sm:grid-cols-2' : 'sm:max-w-xl')}>
+        <RecommendationBlock isSignedIn />
+        {poll && <PollWidget poll={poll} isSignedIn />}
+      </div>
 
       {/* Две колонки: слева свое чтение, справа клуб. Так устроен
           личный кабинет в опорном примере, и это работает: собственные

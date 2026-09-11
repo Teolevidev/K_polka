@@ -186,7 +186,7 @@ export function ProfileForm({ profile, genres, email }: ProfileFormProps) {
                   'rounded-full border px-3 py-1.5 text-sm transition-colors',
                   active
                     ? 'border-primary bg-primary text-primary-foreground'
-                    : 'border-border hover:bg-secondary',
+                    : 'border-border transition-colors hover:border-highlight hover:bg-highlight hover:text-highlight-foreground',
                 )}
               >
                 {g.name}

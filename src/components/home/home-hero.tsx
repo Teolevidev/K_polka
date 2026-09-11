@@ -1,5 +1,4 @@
 import Link from 'next/link';
-import { SearchBar } from '@/components/layout/search-bar';
 import { Illustration } from '@/components/layout/illustration';
 import { BookCover } from '@/components/book/book-cover';
 import { Button } from '@/components/ui/button';
@@ -14,10 +13,16 @@ import { showcaseSections } from '@/lib/books/showcase';
  * больше половины ширины и уходит вниз за нижнее поле ленты, поэтому
  * лента при этом остается низкой.
  *
- * Строку поиска источник не показывает, но у нас это главный вход в
- * приложение - стоит под кнопкой, отдельной строкой.
+ * Поиска здесь намеренно нет. Он стоял второй строкой, дублируя шапку,
+ * и уводил гостя в продуктовый сценарий: искать книгу вместо того,
+ * чтобы понять, куда он попал. Поиск остался в шапке - он никуда не
+ * делся и доступен с любой страницы.
+ *
+ * Главное действие - вступить в клуб, а не завести полку: клуб и есть
+ * продукт, полка - его часть. «Завести полку» осталась вторичной
+ * ссылкой для тех, кому ближе трекер.
  */
-export function HomeHero() {
+export function HomeHero({ signedIn = false }: { signedIn?: boolean }) {
   const collage = showcaseSections.popular.slice(0, 5);
 
   return (
@@ -35,14 +40,18 @@ export function HomeHero() {
             обсуждайте книги с теми, кто читает рядом.
           </p>
 
-          <div className="mt-7">
+          <div className="mt-7 flex flex-wrap items-center gap-x-5 gap-y-3">
             <Button size="lg" variant="onBand" asChild>
-              <Link href="/signin">Завести полку</Link>
+              <Link href={signedIn ? '/profile' : '/signin'}>
+                {signedIn ? 'В мой кабинет' : 'Вступить в клуб'}
+              </Link>
             </Button>
-          </div>
-
-          <div className="mt-6 max-w-md">
-            <SearchBar placeholder="Найдите книгу: «Мастер и Маргарита»" />
+            <Link
+              href={signedIn ? '/library' : '/signin?next=/library'}
+              className="text-base font-medium underline underline-offset-4 hover:no-underline"
+            >
+              Завести полку
+            </Link>
           </div>
         </div>
 

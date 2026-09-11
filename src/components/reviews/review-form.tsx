@@ -83,7 +83,7 @@ export function ReviewForm({ bookRef, isSignedIn, initial }: ReviewFormProps) {
                 aria-label={`Поставить ${n}`}
                 onClick={() => setRating(rating === n ? null : n)}
                 className={cn(
-                  'flex size-7 items-center justify-center rounded transition-colors hover:bg-secondary',
+                  'flex size-7 items-center justify-center rounded transition-colors hover:bg-highlight',
                   active && 'text-accent',
                 )}
               >

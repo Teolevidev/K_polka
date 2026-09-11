@@ -10,6 +10,11 @@ import { cn } from '@/lib/utils';
  * вариантов. Заливка бывает только темной (на светлом) или белой
  * (на цветных лентах): хроматических кнопок в системе нет, зеленый и
  * голубой остаются фонами.
+ *
+ * Наведение - терракота (--highlight). Залитые варианты (темный,
+ * белый, красный) только притемняются: у них своя заливка, и менять
+ * ее на другой цвет значит терять кнопку из виду. Терракоту берут те,
+ * у кого заливки нет или она бледная.
  */
 const buttonVariants = cva(
   'inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-pill text-sm font-medium tracking-tight transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:pointer-events-none disabled:opacity-50 [&_svg]:size-4 [&_svg]:shrink-0',
@@ -21,10 +26,10 @@ const buttonVariants = cva(
         // Белая таблетка для зеленых и голубых лент.
         onBand: 'bg-white text-ink shadow-pill hover:bg-white/90',
         secondary:
-          'bg-secondary text-secondary-foreground hover:bg-secondary/80',
+          'bg-secondary text-secondary-foreground hover:bg-highlight hover:text-highlight-foreground',
         outline:
-          'border border-input bg-background hover:bg-secondary hover:text-secondary-foreground',
-        ghost: 'hover:bg-secondary hover:text-secondary-foreground',
+          'border border-input bg-background hover:border-highlight hover:bg-highlight hover:text-highlight-foreground',
+        ghost: 'hover:bg-highlight hover:text-highlight-foreground',
         destructive:
           'bg-destructive text-destructive-foreground hover:bg-destructive/90',
         link: 'text-primary underline underline-offset-4 hover:no-underline',

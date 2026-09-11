@@ -69,13 +69,15 @@ export function BookRow({
           <CarouselPrevious
             className={cn(
               'static hidden translate-y-0 sm:inline-flex',
-              onBand && 'border-cream/40 bg-transparent text-cream hover:bg-cream/15',
+              onBand &&
+                'border-cream/40 bg-transparent text-cream hover:border-highlight hover:bg-highlight hover:text-highlight-foreground',
             )}
           />
           <CarouselNext
             className={cn(
               'static hidden translate-y-0 sm:inline-flex',
-              onBand && 'border-cream/40 bg-transparent text-cream hover:bg-cream/15',
+              onBand &&
+                'border-cream/40 bg-transparent text-cream hover:border-highlight hover:bg-highlight hover:text-highlight-foreground',
             )}
           />
         </div>
