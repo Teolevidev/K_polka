@@ -60,9 +60,11 @@ export function ValueCards() {
             key={value.title}
             className="flex flex-col gap-3 rounded-card bg-card p-6 text-card-foreground"
           >
-            <div className="flex h-24 items-end">
-              <LandingIllustration name={value.art} className="max-h-full w-auto" />
-            </div>
+            <LandingIllustration
+              name={value.art}
+              frameClassName="flex h-24 items-end"
+              className="max-h-full w-auto"
+            />
 
             <h3 className="font-serif text-xl leading-snug">{value.title}</h3>
             <p className="flex-1 text-sm leading-relaxed text-muted-foreground">

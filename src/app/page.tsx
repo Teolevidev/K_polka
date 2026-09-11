@@ -1,43 +1,47 @@
 import { HomeHero } from '@/components/home/home-hero';
-import { HomeMemberBlock } from '@/components/home/member-block';
+import { HowItWorks } from '@/components/home/landing/how-it-works';
+import { ValueCards } from '@/components/home/landing/value-cards';
+import { ClubLife } from '@/components/home/landing/club-life';
+import { FinalCta } from '@/components/home/landing/final-cta';
 import { BookRow } from '@/components/home/book-row';
-import { QuoteCard } from '@/components/home/quote-card';
-import { RecommendationBlock } from '@/components/home/recommendation-block';
-import { PollWidget } from '@/components/polls/poll-widget';
 
-import { randomQuote } from '@/lib/quotes/data';
 import { showcaseSections } from '@/lib/books/showcase';
 import { isSupabaseConfigured } from '@/lib/supabase/env';
 import { getCurrentUser } from '@/lib/supabase/server';
-import { getProfile } from '@/lib/profile/queries';
-import { getReadingStats } from '@/lib/shelf/queries';
 import { getCurrentEditorialPicks } from '@/lib/editorial/queries';
-import { getActivePoll } from '@/lib/polls';
-import { getPublishedArticles } from '@/lib/articles/queries';
-import { emptyStats } from '@/lib/stats';
 import type { BookCardData } from '@/components/book/book-card';
-import Link from 'next/link';
-import { cn } from '@/lib/utils';
 import { SectionBand } from '@/components/layout/section-band';
 import { LampIllustration } from '@/components/layout/lamp-illustration';
 
+/**
+ * Публичная главная - лендинг клуба.
+ *
+ * У сайта два разных читателя, и раньше они делили одну страницу:
+ * гость видел витрину вперемешку с чужими полками и целями, а участник
+ * - рекламу того, что у него уже есть. Теперь граница проведена:
+ * здесь рассказ о клубе и вход в него, а полки, цели, статистика,
+ * рекомендация и опрос живут в кабинете (/profile).
+ *
+ * Порядок секций - это путь гостя: что это (герой) -> что я буду
+ * делать (как это работает) -> зачем мне это (три ценности) -> каково
+ * там быть (клуб живой) -> что вы читаете (каталог) -> вступить
+ * (финальный CTA). Каталог намеренно опущен вниз: книгами мы не
+ * отличаемся, они есть везде.
+ *
+ * Вошедшему страница показывается та же, меняются только надписи на
+ * кнопках: они ведут в кабинет, а не на вход.
+ */
 export default async function HomePage() {
   const configured = isSupabaseConfigured();
 
-  // Подборка, голосовалка и статьи друг от друга не зависят и от того, кто
-  // вошёл, — тоже. Раньше они выполнялись по очереди, и главная ждала сумму
-  // всех обращений к Supabase вместо самого долгого из них.
-  const [user, editorialPicks, poll, articles] = await Promise.all([
+  const [user, editorialPicks] = await Promise.all([
     configured ? getCurrentUser() : Promise.resolve(null),
     configured ? getCurrentEditorialPicks().catch(() => []) : Promise.resolve([]),
-    configured ? getActivePoll().catch(() => null) : Promise.resolve(null),
-    configured ? getPublishedArticles().catch(() => []) : Promise.resolve([]),
   ]);
 
-  let userName: string | null = null;
-  let stats = emptyStats();
+  const signedIn = Boolean(user);
 
-  // Маркированные администратором книги — если есть; иначе статичная витрина.
+  // Маркированные администратором книги - если есть; иначе статичная витрина.
   const adminPicks: BookCardData[] =
     editorialPicks.length > 0
       ? editorialPicks.map((p) => ({
@@ -48,18 +52,6 @@ export default async function HomePage() {
         }))
       : showcaseSections.adminPicks;
 
-  if (user) {
-    const [profile, readingStats] = await Promise.all([
-      getProfile(user.id),
-      getReadingStats(user.id),
-    ]);
-    userName = profile?.display_name ?? user.email?.split('@')[0] ?? 'Читатель';
-    stats = readingStats;
-  }
-
-  const latestArticles = articles.slice(0, 3);
-  const quote = randomQuote();
-
   return (
     /*
      * Одна полноширинная лента - герой, дальше страница собирается
@@ -69,11 +61,16 @@ export default async function HomePage() {
      * цвет во всю ширину - редкий акцент, а не структура.
      */
     <div>
-      {!userName && <HomeHero />}
+      <HomeHero signedIn={signedIn} />
 
       <div className="container max-w-[1200px] space-y-14 py-12 sm:space-y-16">
-        {userName && <HomeMemberBlock userName={userName} stats={stats} />}
+        <HowItWorks />
+        <ValueCards />
+      </div>
 
+      <ClubLife />
+
+      <div className="container max-w-[1200px] space-y-14 py-12 sm:space-y-16">
         <BookRow
           title="Популярное сейчас"
           subtitle="Что читают в «Книжной полке» на этой неделе"
@@ -81,60 +78,6 @@ export default async function HomePage() {
           showAllHref="/discover"
           ranked
         />
-
-        {/* Рекомендация и опрос - парой: это два коротких действия, и в
-            одну колонку они растягивали главную вдвое. */}
-        <div className={cn('grid gap-4', poll ? 'sm:grid-cols-2' : 'sm:max-w-xl')}>
-          <RecommendationBlock isSignedIn={Boolean(user)} />
-          {poll && <PollWidget poll={poll} isSignedIn={Boolean(user)} />}
-        </div>
-
-        <QuoteCard quote={quote} />
-
-        {!userName && <HomeMemberBlock userName={userName} stats={stats} />}
-
-        {latestArticles.length > 0 && (
-          <section className="space-y-6">
-            <div className="flex items-end justify-between gap-4">
-              <div className="space-y-1">
-                <h2 className="font-serif text-2xl leading-tight sm:text-3xl">Блог</h2>
-                <p className="text-sm text-muted-foreground">
-                  Колонки редактора и обзоры
-                </p>
-              </div>
-              <Link
-                href="/blog"
-                className="shrink-0 text-sm font-medium underline underline-offset-4 hover:no-underline"
-              >
-                Все статьи
-              </Link>
-            </div>
-            <div className="grid gap-4 sm:grid-cols-3">
-              {latestArticles.map((a) => (
-                <Link
-                  key={a.id}
-                  href={`/blog/${a.slug}`}
-                  className="rounded-lg bg-secondary p-5 transition-colors hover:bg-secondary/70"
-                >
-                  <span className="text-xs uppercase tracking-widest text-muted-foreground">
-                    {a.kind === 'editorial'
-                      ? 'Колонка'
-                      : a.kind === 'review'
-                        ? 'Обзор'
-                        : 'Заметка'}
-                  </span>
-                  <h3 className="mt-2 font-serif text-lg leading-snug">{a.title}</h3>
-                  {a.excerpt && (
-                    <p className="mt-2 line-clamp-3 text-sm text-muted-foreground">
-                      {a.excerpt}
-                    </p>
-                  )}
-                </Link>
-              ))}
-            </div>
-          </section>
-        )}
-
       </div>
 
       {/* Выбор редакции - на зеленой ленте с узором, как первый экран:
@@ -166,6 +109,8 @@ export default async function HomePage() {
           </div>
         </div>
       </SectionBand>
+
+      <FinalCta signedIn={signedIn} />
     </div>
   );
 }

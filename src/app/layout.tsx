@@ -5,6 +5,8 @@ import { Providers } from '@/components/layout/providers';
 import { Header } from '@/components/layout/header';
 import { BottomNav } from '@/components/layout/bottom-nav';
 import { Footer } from '@/components/layout/footer';
+import { isSupabaseConfigured } from '@/lib/supabase/env';
+import { getCurrentUser } from '@/lib/supabase/server';
 // Самохостинг шрифтов (без внешних запросов к Google Fonts):
 // надёжнее, быстрее и корректно работает для российской аудитории.
 import '@fontsource-variable/inter/index.css';
@@ -38,6 +40,9 @@ export default async function RootLayout({
 }) {
   const locale = await getLocale();
   const messages = await getMessages();
+  // Нижнее меню у гостя и участника разное, а рисуется оно в макете -
+  // значит, и знать о входе должен макет.
+  const signedIn = isSupabaseConfigured() ? Boolean(await getCurrentUser()) : false;
 
   return (
     <html lang={locale} suppressHydrationWarning>
@@ -49,7 +54,7 @@ export default async function RootLayout({
               <main className="flex-1">{children}</main>
               <Footer />
               <div className="pb-20 md:pb-0" />
-              <BottomNav />
+              <BottomNav signedIn={signedIn} />
             </div>
           </Providers>
         </NextIntlClientProvider>

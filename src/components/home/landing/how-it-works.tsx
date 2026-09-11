@@ -48,10 +48,14 @@ export function HowItWorks() {
         {STEPS.map((step, i) => (
           <li key={step.title} className="flex flex-col gap-3">
             {/* Картинка над текстом и с фиксированной высотой: иначе
-                колонки разной длины разъезжаются по вертикали. */}
-            <div className="flex h-28 items-end sm:h-32">
-              <LandingIllustration name={step.art} className="max-h-full w-auto" />
-            </div>
+                колонки разной длины разъезжаются по вертикали. Высота
+                живет внутри компонента - пока файла нет, слот не
+                занимает места и в секции не зияет пустая полоса. */}
+            <LandingIllustration
+              name={step.art}
+              frameClassName="flex h-28 items-end sm:h-32"
+              className="max-h-full w-auto"
+            />
 
             <p className="text-sm font-medium text-muted-foreground">
               Шаг {i + 1}

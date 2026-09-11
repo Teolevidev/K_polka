@@ -25,6 +25,12 @@ export type LandingArt =
 interface LandingIllustrationProps {
   name: LandingArt;
   className?: string;
+  /**
+   * Классы обертки - обычно это высота слота или ширина колонки.
+   * Обертка рисуется только вместе с картинкой: пустая коробка
+   * заданной высоты оставляла бы в секции дыру, если файла еще нет.
+   */
+  frameClassName?: string;
   /** Размер стороны для next/image. На экране решает класс. */
   size?: number;
 }
@@ -32,12 +38,13 @@ interface LandingIllustrationProps {
 export function LandingIllustration({
   name,
   className,
+  frameClassName,
   size = 320,
 }: LandingIllustrationProps) {
   const [failed, setFailed] = useState(false);
   if (failed) return null;
 
-  return (
+  const image = (
     <Image
       src={`/illustrations/${name}.svg`}
       alt=""
@@ -48,4 +55,6 @@ export function LandingIllustration({
       className={cn('h-auto w-full select-none', className)}
     />
   );
+
+  return frameClassName ? <div className={frameClassName}>{image}</div> : image;
 }

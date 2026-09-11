@@ -59,9 +59,10 @@ export function ClubLife() {
         {/* Иллюстрация отдельной колонкой, а не поверх текста: на
             промежуточных ширинах абсолютная картинка наезжала бы на
             строки. Колонка auto - без файла схлопывается в ноль. */}
-        <div className="mx-auto w-32 lg:mx-0 lg:w-48">
-          <LandingIllustration name="illo-warm-lamp" />
-        </div>
+        <LandingIllustration
+          name="illo-warm-lamp"
+          frameClassName="mx-auto w-32 lg:mx-0 lg:w-48"
+        />
       </div>
     </SectionBand>
   );
