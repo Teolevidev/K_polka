@@ -5,6 +5,9 @@ import { encodeBookRef } from '@/lib/books/ref';
 import { ensureEditorialAuthor } from './editorial-account';
 import { applyTextRules, checkArticleDraft, slugify, SLUG_RE } from './guards';
 import {
+  MAX_WORDS,
+  MIN_LONGREAD_WORDS,
+  MIN_REVIEW_WORDS,
   SYSTEM_PROMPT,
   longreadPrompt,
   reviewPrompt,
@@ -182,6 +185,7 @@ interface SaveDraftInput {
   relatedBookRef: string | null;
   book: { title: string; authors: string[] } | null;
   minBodyLength: number;
+  minWords: number;
 }
 
 /**
@@ -208,6 +212,8 @@ async function saveDraft(
     bodyMd,
     book: input.book,
     minBodyLength: input.minBodyLength,
+    minWords: input.minWords,
+    maxWords: MAX_WORDS,
   });
   if (check.errors.length > 0) {
     throw new Error(`Черновик не прошел проверку: ${check.errors.join('; ')}`);
@@ -266,6 +272,7 @@ export async function runReview(
     relatedBookRef: bookRefOf(row),
     book: { title: facts.title, authors: facts.authors },
     minBodyLength: 1200,
+    minWords: MIN_REVIEW_WORDS,
   });
 }
 
@@ -289,7 +296,7 @@ export async function runLongread(
 
   const draft = await askModel(longreadPrompt(payload, rows.map(rowToFacts)), {
     model: MODEL_LONG,
-    maxTokens: 6000,
+    maxTokens: 3000,
   });
 
   return saveDraft(supabase, {
@@ -298,7 +305,8 @@ export async function runLongread(
     relatedBookRef: rows[0] ? bookRefOf(rows[0]) : null,
     // У лонгрида одной книги нет, и проверять «назван ли автор» не по чему.
     book: null,
-    minBodyLength: 2500,
+    minBodyLength: 2000,
+    minWords: MIN_LONGREAD_WORDS,
   });
 }
 
@@ -336,5 +344,6 @@ export async function runRoundup(
     relatedBookRef: null,
     book: null,
     minBodyLength: 1200,
+    minWords: MIN_REVIEW_WORDS,
   });
 }

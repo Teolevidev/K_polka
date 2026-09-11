@@ -5,6 +5,7 @@ import {
   slugify,
   SLUG_RE,
   checkArticleDraft,
+  countWords,
 } from '@/lib/content/guards';
 import { parseBookLine, parseBookList } from '@/lib/content/parse';
 import { buildIngestQuery } from '@/lib/content/ingest';
@@ -193,5 +194,69 @@ describe('проверка черновика', () => {
     });
     expect(check.errors).toHaveLength(0);
     expect(check.warnings.join(' ')).toContain('не упомянуто название');
+  });
+});
+
+describe('объем в словах', () => {
+  it('считает слова, а не куски разметки', () => {
+    expect(countWords('## Подзаголовок\n\n- первый пункт\n- второй пункт')).toBe(5);
+  });
+
+  it('не считает ограждения кода', () => {
+    expect(countWords('текст\n```\nconst a = 1;\n```\nеще текст')).toBe(3);
+  });
+
+  it('роняет текст длиннее потолка', () => {
+    const check = checkArticleDraft({
+      title: 'Обзор книги',
+      excerpt: 'Коротко',
+      bodyMd: 'слово '.repeat(700),
+      maxWords: 600,
+    });
+    expect(check.errors.join(' ')).toContain('длиннее 600 слов');
+  });
+
+  it('пропускает текст в границах', () => {
+    const check = checkArticleDraft({
+      title: 'Обзор книги',
+      excerpt: 'Коротко',
+      bodyMd: 'слово '.repeat(400),
+      minWords: 250,
+      maxWords: 600,
+    });
+    expect(check.errors).toHaveLength(0);
+  });
+});
+
+describe('голос критика', () => {
+  const body = 'Разбор книги по существу. '.repeat(60);
+
+  it('роняет выдуманный личный опыт', () => {
+    const check = checkArticleDraft({
+      title: 'Обзор книги',
+      excerpt: 'Коротко',
+      bodyMd: `Я помню, как читал это впервые. ${body}`,
+    });
+    expect(check.errors.join(' ')).toContain('личный опыт');
+  });
+
+  it('помечает рекламные штампы замечанием, но не роняет', () => {
+    const check = checkArticleDraft({
+      title: 'Обзор книги',
+      excerpt: 'Коротко',
+      bodyMd: `Этот бестселлер не оставит равнодушным никого. ${body}`,
+    });
+    expect(check.errors).toHaveLength(0);
+    expect(check.warnings.join(' ')).toContain('рекламные штампы');
+  });
+
+  it('не придирается к нормальному критическому тексту', () => {
+    const check = checkArticleDraft({
+      title: 'Обзор книги',
+      excerpt: 'Коротко',
+      bodyMd: `Книга стоит в одном ряду с ранней прозой автора. ${body}`,
+    });
+    expect(check.errors).toHaveLength(0);
+    expect(check.warnings.filter((w) => w.includes('штампы'))).toHaveLength(0);
   });
 });

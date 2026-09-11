@@ -9,6 +9,13 @@
  * могут зваться из скрипта.
  */
 
+/*
+ * Границы слов во всех проверках ниже размечены через (?<![\p{L}]), а не
+ * через \b. В JavaScript \b опирается на \w, а \w - это латиница с
+ * цифрами: перед кириллической буквой граница не срабатывает никогда.
+ * Регулярка вида /\bбестселлер/ выглядит рабочей и молча не ловит ничего.
+ */
+
 /** Правило проекта: всегда обычная «е». */
 const YO_RE = /[ёЁ]/g;
 
@@ -78,6 +85,42 @@ export function slugify(input: string, maxLength = 60): string {
 /** Тот же формат slug, что требует saveArticle. */
 export const SLUG_RE = /^[a-z0-9][a-z0-9-]{1,80}$/;
 
+/**
+ * Слов в тексте.
+ *
+ * Объем задан заказчиком в словах, поэтому и считаем слова, а не знаки:
+ * в русском тексте между этими мерами разброс почти вдвое, и «не более
+ * 600 слов» через лимит по знакам не выражается.
+ *
+ * Разметка не в счет: решетки подзаголовков, звездочки списков и
+ * ограждения кода словами не являются.
+ */
+export function countWords(input: string): number {
+  return input
+    .replace(/```[\s\S]*?```/g, ' ')
+    .replace(/[#*_>`~\[\]()|-]/g, ' ')
+    .split(/\s+/)
+    .filter((w) => /[\p{L}\p{N}]/u.test(w)).length;
+}
+
+/**
+ * Рекламные штампы.
+ *
+ * Критик с суждением их не пишет: это язык аннотации на обложке, и он
+ * ровно тем и плох, что ничего не сообщает. Ловим только самые
+ * заезженные - придираться к каждому эпитету бессмысленно.
+ */
+const AD_CLICHES = [
+  /(?<![\p{L}])бестселлер/iu,
+  /(?<![\p{L}])шедевр/iu,
+  /(?<![\p{L}])культов(ый|ая|ое|ые)(?![\p{L}])/iu,
+  /(?<![\p{L}])мирово(й|го) (признани|извести)/iu,
+  /(?<![\p{L}])изменит ваш[уе] жизнь/iu,
+  /(?<![\p{L}])не оставит (никого )?равнодушн/iu,
+  /(?<![\p{L}])обязательн(ое|ая) к прочтению/iu,
+  /(?<![\p{L}])на одном дыхании(?![\p{L}])/iu,
+];
+
 export interface DraftCheckInput {
   title: string;
   excerpt: string;
@@ -86,6 +129,9 @@ export interface DraftCheckInput {
   book?: { title: string; authors: string[] } | null;
   minBodyLength?: number;
   maxBodyLength?: number;
+  /** Границы объема в словах - так его задает заказчик. */
+  minWords?: number;
+  maxWords?: number;
 }
 
 export interface DraftCheck {
@@ -120,6 +166,14 @@ export function checkArticleDraft(input: DraftCheckInput): DraftCheck {
   if (body.length > maxBody) {
     errors.push(`текст длиннее ${maxBody} знаков (${body.length})`);
   }
+
+  const words = countWords(body);
+  if (input.maxWords && words > input.maxWords) {
+    errors.push(`текст длиннее ${input.maxWords} слов (${words})`);
+  }
+  if (input.minWords && words < input.minWords) {
+    errors.push(`текст короче ${input.minWords} слов (${words})`);
+  }
   if (!excerpt) warnings.push('нет короткого описания');
   else if (excerpt.length > 300) warnings.push('описание длиннее 300 знаков');
 
@@ -136,8 +190,23 @@ export function checkArticleDraft(input: DraftCheckInput): DraftCheck {
   if (/^(Конечно|Вот|Разумеется)[,!]/.test(body)) {
     errors.push('текст начинается с ответа ассистента, а не с самой статьи');
   }
-  if (/\bкак (?:ии|языковая модель|искусственный интеллект)\b/i.test(body)) {
+  if (
+    /(?<![\p{L}])как (?:ии|языковая модель|искусственный интеллект)(?![\p{L}])/iu.test(
+      body,
+    )
+  ) {
     errors.push('модель говорит о себе - это не редакционный текст');
+  }
+
+  // Личный опыт: критик судит по книге, а не по своим воспоминаниям,
+  // которых у него не было.
+  if (/(?<![\p{L}])я (?:помню|читал|перечит|впервые|до сих пор)/iu.test(body)) {
+    errors.push('в тексте выдуманный личный опыт («я помню», «я читал»)');
+  }
+
+  const cliches = AD_CLICHES.filter((re) => re.test(body));
+  if (cliches.length > 0) {
+    warnings.push(`рекламные штампы: ${cliches.length}`);
   }
 
   if (input.book) {
