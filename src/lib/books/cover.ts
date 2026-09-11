@@ -68,8 +68,18 @@ export function resolveCoverUrl(
 
   // Том Google: либо книга пришла оттуда прямо сейчас, либо ее
   // идентификатор сохранен в каталоге при добавлении.
-  const volumeId =
-    book.googleVolumeId ?? (book.source === 'google' ? book.sourceId : null);
+  //
+  // Важная тонкость: если API сказал, что обложки у тома нет
+  // (imageLinks пуст, а значит пуст и coverUrl), просить ее у Google
+  // бессмысленно - он ответит 200 и отдаст свою заглушку «image not
+  // available», и она встанет в карточку как настоящая обложка.
+  // Лучше сразу идти к ISBN и соседним изданиям.
+  const fromGoogleNow = book.source === 'google' ? book.sourceId : null;
+  const volumeId = fromGoogleNow
+    ? book.coverUrl
+      ? fromGoogleNow
+      : null
+    : book.googleVolumeId;
   if (volumeId) params.set('g', volumeId);
 
   const isbn = book.isbn13 ?? book.isbn10;

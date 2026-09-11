@@ -123,18 +123,48 @@ export function similarity(a: string, b: string): number {
 const MIN_TOKEN_SIMILARITY = 0.6;
 
 /**
- * Оценивает, насколько строка query соответствует target,
- * учитывая опечатки. Возвращает score 0..1.
+ * Насколько строка query соответствует target.
  *
- * Алгоритм: для каждого токена запроса ищем лучший по похожести
- * токен в цели; усредняем. Точное вхождение подстроки даёт бонус.
+ * Возвращает не только балл, но и то, ЧЕМ он набран: сколько слов
+ * запроса нашлось и нашлось ли самое длинное из них. Без этого балл
+ * обманывает - см. matchesQuery ниже.
  */
-export function fuzzyScore(query: string, target: string): number {
+export interface FuzzyResult {
+  /** Итоговый балл 0..1. */
+  score: number;
+  /** Сколько слов запроса нашли себе пару. */
+  matched: number;
+  /** Всего слов в запросе. */
+  total: number;
+  /** Нашлось ли самое длинное слово запроса. */
+  longestMatched: boolean;
+}
+
+/**
+ * Сопоставляет запрос с текстом, считая попадания по словам.
+ *
+ * Алгоритм: для каждого слова запроса ищем лучшее по похожести слово в
+ * цели; усредняем. Точное вхождение подстроки даёт бонус.
+ */
+export function fuzzyMatch(query: string, target: string): FuzzyResult {
   const queryTokens = tokenize(query);
   const targetTokens = tokenize(target);
-  if (queryTokens.length === 0 || targetTokens.length === 0) return 0;
+  const empty: FuzzyResult = {
+    score: 0,
+    matched: 0,
+    total: queryTokens.length,
+    longestMatched: false,
+  };
+  if (queryTokens.length === 0 || targetTokens.length === 0) return empty;
+
+  // Самое длинное слово запроса несёт основной смысл: в «Сто лет
+  // одиночества» это «одиночества», а не «сто» и «лет».
+  const longest = queryTokens.reduce((a, b) => (b.length > a.length ? b : a));
 
   let totalBest = 0;
+  let matched = 0;
+  let longestMatched = false;
+
   for (const qt of queryTokens) {
     let best = 0;
     for (const tt of targetTokens) {
@@ -148,8 +178,13 @@ export function fuzzyScore(query: string, target: string): number {
     // местами совпадают, и пара таких слов протаскивала в выдачу
     // справочники и научные журналы. Опечатка даёт заметно больше порога,
     // так что терпимость к ней сохраняется.
-    totalBest += best >= MIN_TOKEN_SIMILARITY ? best : 0;
+    if (best >= MIN_TOKEN_SIMILARITY) {
+      totalBest += best;
+      matched += 1;
+      if (qt === longest) longestMatched = true;
+    }
   }
+
   let score = totalBest / queryTokens.length;
 
   // Бонус за полное вхождение нормализованного запроса в цель
@@ -158,7 +193,54 @@ export function fuzzyScore(query: string, target: string): number {
   if (nt.includes(nq) && nq.length >= 3) {
     score = Math.min(1, score + 0.15);
   }
-  return Number(score.toFixed(4));
+
+  return {
+    score: Number(score.toFixed(4)),
+    matched,
+    total: queryTokens.length,
+    longestMatched,
+  };
+}
+
+/** Балл соответствия 0..1. Короткая форма fuzzyMatch. */
+export function fuzzyScore(query: string, target: string): number {
+  return fuzzyMatch(query, target).score;
+}
+
+/** Доля слов запроса, ниже которой совпадение считается случайным. */
+const MIN_COVERAGE = 0.5;
+
+/**
+ * Достаточно ли совпадения, чтобы считать книгу найденной.
+ *
+ * Одного балла мало, и это видно на живых примерах. Google Books ищет
+ * по ТЕКСТУ книг, а не по названиям, поэтому на запрос «Сто лет
+ * одиночества» он честно возвращает всё, где эта фраза встречается
+ * внутри, - и в выдачу лезли «Егор Летов. Моя оборона» и «Русские
+ * поэты за сто лет».
+ *
+ * Разбор показал две разные дыры:
+ *
+ *  1. «Егор Летов» набирал балл на одном слове из трёх: «лет» входит
+ *     подстрокой в «летов» и получал за это 0.95. Отсюда требование к
+ *     покрытию - совпасть должна хотя бы половина слов запроса.
+ *
+ *  2. «Русские поэты за сто лет» покрытие проходил (2 слова из 3), но
+ *     мимо шло как раз главное слово. Отсюда второе требование: самое
+ *     длинное слово запроса обязано найтись.
+ *
+ * Запросы короче трех слов проверяются только покрытием: требовать там
+ * «главное слово» бессмысленно, оно же и единственное.
+ */
+export function matchesQuery(result: FuzzyResult): boolean {
+  if (result.total === 0 || result.matched === 0) return false;
+  if (result.matched / result.total < MIN_COVERAGE) return false;
+
+  const needsSignificant =
+    result.total >= 3 &&
+    result.matched < result.total &&
+    !result.longestMatched;
+  return !needsSignificant;
 }
 
 /**

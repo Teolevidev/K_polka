@@ -8,6 +8,8 @@ import {
   preferredLanguage,
   stripLigatureMarks,
   htmlToPlainText,
+  fuzzyMatch,
+  matchesQuery,
 } from '@/lib/books/normalize';
 import {
   resolveCoverUrl,
@@ -823,5 +825,81 @@ describe('обложка по названию, когда ссылки нет',
     );
     expect(url).toContain('u=');
     expect(url).toContain('t=');
+  });
+});
+
+describe('осмысленность совпадения', () => {
+  // Все примеры - из живой выдачи по запросу «Сто лет одиночества».
+  const query = 'Сто лет одиночества';
+
+  function ok(target: string) {
+    return matchesQuery(fuzzyMatch(query, target));
+  }
+
+  it('сама книга проходит', () => {
+    expect(ok('Сто лет одиночества: роман')).toBe(true);
+    expect(ok('Сто лет одиночества')).toBe(true);
+  });
+
+  it('совпадение одним словом из трех отсекается', () => {
+    // «лет» входит подстрокой в «Летов» и набирало 0.95 за один токен.
+    expect(ok('Егор Летов. Моя оборона')).toBe(false);
+  });
+
+  it('главное слово запроса обязано найтись', () => {
+    // Покрытие 2 из 3, но мимо идет как раз «одиночества».
+    expect(ok('Русские поэты за сто лет')).toBe(false);
+  });
+
+  it('прочий мусор из той же выдачи отсекается', () => {
+    expect(ok('Нюх потеряла. Хроники одного карантина')).toBe(false);
+    expect(ok('Русский Репортер No16-17/2014')).toBe(false);
+    expect(ok('Семья и школа')).toBe(false);
+  });
+
+  it('опечатка в главном слове по-прежнему прощается', () => {
+    expect(ok('Сто лет одиночевства')).toBe(true);
+  });
+
+  it('короткий запрос проверяется только покрытием', () => {
+    // У запроса в одно слово «главное слово» - оно же единственное.
+    expect(matchesQuery(fuzzyMatch('Лавр', 'Лавр'))).toBe(true);
+    expect(matchesQuery(fuzzyMatch('Лавр', 'Обелиск'))).toBe(false);
+  });
+
+  it('поиск по автору не ломается', () => {
+    expect(matchesQuery(fuzzyMatch('Габриэль Гарсиа Маркес', 'Габриэль Гарсиа Маркес'))).toBe(
+      true,
+    );
+    expect(matchesQuery(fuzzyMatch('Пушкин', 'Александр Пушкин'))).toBe(true);
+  });
+});
+
+describe('заглушка Google вместо обложки', () => {
+  it('у тома без обложки идентификатор не запрашивается', () => {
+    // Google на такой запрос отвечает 200 и отдает картинку с надписью
+    // «image not available» - она встанет в карточку как настоящая.
+    const url = resolveCoverUrl(
+      book({
+        source: 'google',
+        sourceId: 'jBiIQlevopYC',
+        coverUrl: null,
+        isbn13: '9785457151741',
+        title: 'Спектр',
+      }),
+    );
+    expect(url).not.toContain('g=');
+    expect(url).toContain('isbn=9785457151741');
+  });
+
+  it('у тома с обложкой идентификатор запрашивается', () => {
+    const url = resolveCoverUrl(
+      book({
+        source: 'google',
+        sourceId: 'jBiIQlevopYC',
+        coverUrl: 'https://books.google.com/books/content?id=jBiIQlevopYC',
+      }),
+    );
+    expect(url).toContain('g=jBiIQlevopYC');
   });
 });
