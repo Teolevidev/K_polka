@@ -4,7 +4,21 @@
  * внешних источников (Google Books, OpenLibrary, ISBNdb, LiveLib).
  */
 
-export type BookSource = 'google' | 'openlibrary' | 'isbndb' | 'livelib' | 'local';
+/**
+ * Откуда приехали данные.
+ *
+ * 'publisher' - сайт издательства. Появился ради современной русской
+ * прозы: у Google и OpenLibrary книга этого года из Редакции Елены
+ * Шубиной либо отсутствует, либо лежит без обложки и аннотации, а у
+ * издательства она есть всегда - это его собственный товар.
+ */
+export type BookSource =
+  | 'google'
+  | 'openlibrary'
+  | 'isbndb'
+  | 'livelib'
+  | 'publisher'
+  | 'local';
 
 export type MediaType = 'book' | 'audiobook' | 'comic';
 

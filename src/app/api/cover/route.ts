@@ -29,6 +29,17 @@ const ALLOWED_HOSTS = new Set([
   'books.google.com',
   'books.googleusercontent.com',
   'covers.openlibrary.org',
+  // Издательства - см. PUBLISHER_HOSTS в src/lib/books/publisher.ts.
+  // Список продублирован намеренно: этот маршрут - граница доверия, и
+  // читать ее должно быть можно, не уходя в другой файл.
+  'ast.ru',
+  'www.ast.ru',
+  'eksmo.ru',
+  'www.eksmo.ru',
+  'azbooka.ru',
+  'www.azbooka.ru',
+  'alpinabook.ru',
+  'www.alpinabook.ru',
 ]);
 
 const FETCH_TIMEOUT_MS = 8_000;

@@ -41,6 +41,11 @@ export async function findOrCreateBook(
   if (book.isbn13) orFilters.push(`isbn_13.eq.${book.isbn13}`);
   const col = sourceColumn(book.source);
   if (col) orFilters.push(`${col}.eq.${book.sourceId}`);
+  // Книга из издательства знает свой том в Google отдельным полем -
+  // ищем и по нему, иначе одно и то же издание заведется дважды.
+  if (!col && book.googleVolumeId) {
+    orFilters.push(`google_books_id.eq.${book.googleVolumeId}`);
+  }
 
   if (orFilters.length > 0) {
     const { data: found } = await supabase
@@ -58,8 +63,15 @@ export async function findOrCreateBook(
     .insert({
       isbn_13: book.isbn13,
       isbn_10: book.isbn10,
-      google_books_id: book.source === 'google' ? book.sourceId : null,
-      openlibrary_work_id: book.source === 'openlibrary' ? book.sourceId : null,
+      // Идентификатор внешнего каталога берем и у книги другого
+      // источника, если он известен. Книга с сайта издательства знает
+      // свой том в Google не через sourceId (там лежит адрес карточки),
+      // а через googleVolumeId - и без этой ветки связь терялась бы, а
+      // вместе с ней запасные размеры обложки.
+      google_books_id:
+        book.source === 'google' ? book.sourceId : (book.googleVolumeId ?? null),
+      openlibrary_work_id:
+        book.source === 'openlibrary' ? book.sourceId : (book.workId ?? null),
       title: book.title,
       subtitle: book.subtitle,
       description: book.description,

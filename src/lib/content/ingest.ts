@@ -5,6 +5,8 @@ import { searchOpenLibrary } from '@/lib/books/openlibrary';
 import { scoreBook, compareResults } from '@/lib/books/search';
 import { findOrCreateBook } from '@/lib/books/catalog';
 import { cleanIsbn, looksLikeIsbn } from '@/lib/books/isbn';
+import { fetchPublisherBook, isKnownPublisherHost } from '@/lib/books/publisher';
+import { mergeBooks } from '@/lib/books/search';
 import { preferredLanguage } from '@/lib/books/normalize';
 import type { NormalizedBook } from '@/lib/books/types';
 import type { ContentJobResult, IngestBookPayload } from './types';
@@ -40,6 +42,8 @@ export function buildIngestQuery(payload: IngestBookPayload): {
   query: string;
   isbn: boolean;
 } {
+  // Ссылка на издательство обрабатывается отдельным путем и сюда не
+  // доходит; если дошла - значит, задание собрали неправильно.
   const isbn = payload.isbn?.trim();
   if (isbn) {
     // Кривой ISBN не пускаем в текстовый поиск. «12345» найдет в Google
@@ -72,6 +76,9 @@ export function buildIngestQuery(payload: IngestBookPayload): {
 export async function findBestMatch(
   payload: IngestBookPayload,
 ): Promise<NormalizedBook | null> {
+  // Дали ссылку на карточку издательства - идем туда и не гадаем.
+  if (payload.url) return fetchFromPublisher(payload.url);
+
   const { query, isbn } = buildIngestQuery(payload);
 
   const [google, openlibrary] = await Promise.all([
@@ -113,6 +120,65 @@ export async function findBestMatch(
   }
 
   return best;
+}
+
+/**
+ * Книга со страницы издательства, дополненная внешними каталогами.
+ *
+ * Издательство знает свою книгу лучше всех: название, автора, ISBN, год,
+ * объем и аннотацию. Чего оно не знает - так это идентификаторов Google
+ * и OpenLibrary, а они нужны нам ради обложек разных размеров и ради
+ * склейки с изданиями, которые участники уже клали на полки.
+ *
+ * Поэтому по ISBN с карточки делаем один точный запрос наружу и
+ * подмешиваем то, чего у издательства нет. Данные издательства при этом
+ * главнее: mergeBooks вызывается так, что его поля идут первым
+ * аргументом и перетираются только там, где у него пусто.
+ */
+async function fetchFromPublisher(url: string): Promise<NormalizedBook | null> {
+  if (!isKnownPublisherHost(url)) {
+    throw new Error(`Сайт этой ссылки не в списке известных издательств: ${url}`);
+  }
+
+  const book = await fetchPublisherBook(url);
+  const isbn = book.isbn13 ?? book.isbn10;
+  if (!isbn) return book;
+
+  const [google, openlibrary] = await Promise.all([
+    searchGoogleBooks(isbn, { isbn: true, limit: 3 }).catch(
+      () => [] as NormalizedBook[],
+    ),
+    searchOpenLibrary(isbn, { isbn: true, limit: 3 }).catch(
+      () => [] as NormalizedBook[],
+    ),
+  ]);
+
+  let enriched = book;
+  for (const external of [...google, ...openlibrary]) {
+    enriched = mergeBooks(enriched, external, 'ru');
+  }
+
+  // Идентификаторы внешних каталогов переносим руками.
+  //
+  // mergeBooks их не сводит: у него source и sourceId берутся из первого
+  // аргумента целиком, а отдельных полей под чужие идентификаторы в
+  // NormalizedBook два - googleVolumeId и workId, и заполняет их не
+  // каждый источник. Без этих двух строк книга с сайта издательства
+  // приезжала бы в каталог без связи с Google, то есть без запасных
+  // размеров обложки и без склейки с изданиями, которые участники уже
+  // клали на полки.
+  const googleVolumeId = google.find((b) => b.source === 'google')?.sourceId;
+  const workId = openlibrary.find((b) => b.workId)?.workId;
+
+  return {
+    ...enriched,
+    // Источником остается издательство: адрес карточки - наш ключ к ней.
+    source: book.source,
+    sourceId: book.sourceId,
+    sourceUrl: url,
+    googleVolumeId: googleVolumeId ?? enriched.googleVolumeId ?? null,
+    workId: workId ?? enriched.workId ?? null,
+  };
 }
 
 /** Сколько полей карточки заполнено - грубая мера полноты записи. */
@@ -157,10 +223,15 @@ export async function runIngestBook(
   if (!match.description) warnings.push('нет аннотации');
   if (!match.isbn13) warnings.push('нет ISBN-13');
 
+  const from =
+    match.source === 'publisher' && match.publisher
+      ? ` (${match.publisher})`
+      : '';
+
   return {
     summary: before
       ? `Книга уже была в каталоге: «${match.title}»`
-      : `Завел книгу «${match.title}»`,
+      : `Завел книгу «${match.title}»${from}`,
     bookId,
     title: match.title,
     authors: match.authors,

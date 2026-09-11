@@ -33,6 +33,12 @@ export function parseBookLine(line: string): ParsedBookLine | null {
   const value = line.trim();
   if (!value || value.startsWith('#')) return null;
 
+  // Ссылка на карточку издательства - самый точный вход, поэтому
+  // проверяется первой.
+  if (/^https?:\/\//i.test(value)) {
+    return { payload: { url: value }, key: value.toLowerCase() };
+  }
+
   if (looksLikeIsbnLine(value)) {
     const isbn = value.replace(/[\s-]/g, '');
     return { payload: { isbn }, key: isbn };

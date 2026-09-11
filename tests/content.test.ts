@@ -97,6 +97,18 @@ describe('разбор списка книг', () => {
     expect(parseBookLine('Ай-Петри')?.payload).toEqual({ query: 'Ай-Петри' });
   });
 
+  it('узнает ссылку на карточку издательства', () => {
+    const url = 'https://ast.ru/book/lavr-894062/';
+    expect(parseBookLine(url)?.payload).toEqual({ url });
+  });
+
+  it('не разбирает ссылку как «Название - Автор»', () => {
+    // В адресе бывают дефисы с пробелами вокруг после копирования,
+    // и без проверки на ссылку первой строка уехала бы в текстовый поиск.
+    const url = 'https://www.eksmo.ru/book/sad - 123/';
+    expect(parseBookLine(url)?.payload).toEqual({ url });
+  });
+
   it('пропускает пустые строки и комментарии', () => {
     const list = parseBookList('# список\n\n9785171326135\n\nЛавр - Водолазкин');
     expect(list).toHaveLength(2);

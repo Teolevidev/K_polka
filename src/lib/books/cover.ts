@@ -14,6 +14,17 @@ const PROXIED_HOSTS = new Set([
   'books.google.com',
   'books.googleusercontent.com',
   'covers.openlibrary.org',
+  // Сайты издательств: обложку берем оттуда же, откуда карточку.
+  // Файл к себе не перекладываем - только отдаем через свой домен,
+  // как и всем остальным источникам.
+  'ast.ru',
+  'www.ast.ru',
+  'eksmo.ru',
+  'www.eksmo.ru',
+  'azbooka.ru',
+  'www.azbooka.ru',
+  'alpinabook.ru',
+  'www.alpinabook.ru',
 ]);
 
 /** Размер обложки: карточка в выдаче, полка, страница книги. */
