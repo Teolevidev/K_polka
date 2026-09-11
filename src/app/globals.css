@@ -32,13 +32,18 @@
     --brand-plum: 300 9% 15%; /* #292229 */
     --brand-graphite: 317 6% 23%; /* #3f383d */
     --brand-char: 300 8% 4%; /* #070607 */
-    --brand-fog: 0 0% 93%; /* #ededed */
+    --brand-fog: 162 14% 93%;
 
     /* --- Семантические токены светлой темы ------------------------ */
     --background: 0 0% 100%;
     --foreground: var(--brand-ink);
 
-    --card: var(--brand-cream);
+    /* --- Светлые поверхности ---------------------------------------
+       Оттенки того же зеленого, что у лент, а не теплый бежевый.
+       Бежевый достался от первой палитры и рядом с фирменным зеленым
+       читался как чужой: страница распадалась на «зеленое» и «не
+       зеленое». Тон один - меняется только светлота. */
+    --card: 162 26% 96%;
     --card-foreground: var(--brand-ink);
 
     --popover: 0 0% 100%;
@@ -48,11 +53,11 @@
     --primary: var(--brand-plum);
     --primary-foreground: 0 0% 100%;
 
-    --secondary: var(--brand-cream);
+    --secondary: 162 26% 95%;
     --secondary-foreground: var(--brand-ink);
 
-    --muted: var(--brand-fog);
-    --muted-foreground: 317 5% 42%;
+    --muted: 162 18% 92%;
+    --muted-foreground: 168 8% 40%;
 
     /* Голубой - декоративный акцент: звезды рейтинга, подсветка. */
     --accent: var(--brand-sky);
@@ -61,8 +66,8 @@
     --destructive: 0 65% 45%;
     --destructive-foreground: 0 0% 98%;
 
-    --border: 40 20% 89%;
-    --input: 40 20% 87%;
+    --border: 162 16% 88%;
+    --input: 162 16% 85%;
     --ring: var(--brand-plum);
 
     --radius: 0.75rem;
@@ -93,15 +98,15 @@
      */
     --brand-forest: 162 72% 13%;
     --brand-sky: 202 48% 44%;
-    --brand-fog: 300 6% 16%;
+    --brand-fog: 165 9% 16%;
 
-    --background: 300 8% 6%;
+    --background: 165 10% 7%;
     --foreground: 40 20% 95%;
 
-    --card: 300 7% 11%;
+    --card: 165 10% 12%;
     --card-foreground: 40 20% 95%;
 
-    --popover: 300 7% 11%;
+    --popover: 165 10% 12%;
     --popover-foreground: 40 20% 95%;
 
     /* На темном фоне первичная кнопка светлая - это та же белая
@@ -109,11 +114,11 @@
     --primary: 40 14% 92%;
     --primary-foreground: 310 16% 7%;
 
-    --secondary: 300 6% 16%;
+    --secondary: 165 9% 16%;
     --secondary-foreground: 40 20% 95%;
 
-    --muted: 300 6% 15%;
-    --muted-foreground: 40 8% 64%;
+    --muted: 165 9% 15%;
+    --muted-foreground: 150 6% 64%;
 
     --accent: 202 55% 52%;
     --accent-foreground: 310 16% 7%;
@@ -121,8 +126,8 @@
     --destructive: 0 60% 50%;
     --destructive-foreground: 0 0% 98%;
 
-    --border: 300 6% 19%;
-    --input: 300 6% 21%;
+    --border: 165 8% 20%;
+    --input: 165 8% 22%;
     --ring: 40 14% 92%;
   }
 }

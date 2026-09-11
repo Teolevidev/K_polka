@@ -18,7 +18,9 @@ export function HomeTile({ icon: Icon, title, children, className }: HomeTilePro
   return (
     <section
       className={cn(
-        'flex h-full min-h-[260px] flex-col rounded-lg bg-background p-5 text-foreground shadow-lift sm:p-6',
+        // Светлая поверхность, а не чистый белый: на белой странице
+        // белая плитка держалась на одной тени и терялась.
+        'flex h-full min-h-[260px] flex-col rounded-lg bg-card p-5 text-card-foreground sm:p-6',
         className,
       )}
     >
