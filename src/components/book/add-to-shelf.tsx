@@ -93,7 +93,9 @@ export function AddToShelf({
         {open && (
           <div
             role="menu"
-            className="absolute z-20 mt-1 w-full overflow-hidden rounded-md border border-border bg-popover shadow-lg"
+            // Цвет текста задаем явно: меню всплывает над зеленой
+            // лентой и иначе наследует ее кремовый - белым по белому.
+            className="absolute z-20 mt-1 w-full overflow-hidden rounded-lg border border-border bg-popover text-popover-foreground shadow-lg"
           >
             {SHELVES.map(({ status: s, label, icon: Icon }) => (
               <button

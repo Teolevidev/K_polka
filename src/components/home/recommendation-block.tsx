@@ -2,9 +2,10 @@
 
 import Link from 'next/link';
 import { useState, useTransition } from 'react';
-import { Sparkles, Loader2, RefreshCw, BookOpen, AlertTriangle } from 'lucide-react';
+import { Sparkles, RefreshCw, BookOpen, AlertTriangle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { HomeTile } from './home-tile';
+import { GridLoader, LoadingPill } from '@/components/ui/grid-loader';
 import { recommendBook, type RecommendationResult } from '@/lib/ai/recommend';
 import { proxiedCoverUrl } from '@/lib/books/cover';
 
@@ -32,20 +33,24 @@ export function RecommendationBlock({ isSignedIn }: RecommendationBlockProps) {
           жанров, прочитанного и того, что популярно у других читателей.
         </p>
 
-        {!result && (
-          <Button
-            onClick={ask}
-            disabled={pending || !isSignedIn}
-            className="mt-auto self-start"
-          >
-            {pending ? (
-              <Loader2 className="size-4 animate-spin" />
-            ) : (
+        {/* Пока AI думает, показываем не кнопку с крутилкой, а честное
+            «идет подбор»: ждать приходится несколько секунд, и кнопка
+            все это время выглядела нажатой и сломанной. */}
+        {!result &&
+          (pending ? (
+            <LoadingPill className="mt-auto self-start" pattern="sparkle">
+              Подбираю книгу
+            </LoadingPill>
+          ) : (
+            <Button
+              onClick={ask}
+              disabled={!isSignedIn}
+              className="mt-auto self-start"
+            >
               <Sparkles className="size-4" />
-            )}
-            Порекомендуй мне книгу
-          </Button>
-        )}
+              Порекомендуй мне книгу
+            </Button>
+          ))}
 
         {!isSignedIn && !result && (
           <p className="mt-2 text-xs text-muted-foreground">
@@ -92,7 +97,7 @@ export function RecommendationBlock({ isSignedIn }: RecommendationBlockProps) {
                 )}
                 <Button variant="outline" size="sm" onClick={ask} disabled={pending}>
                   {pending ? (
-                    <Loader2 className="size-4 animate-spin" />
+                    <GridLoader pattern="sparkle" size={16} />
                   ) : (
                     <RefreshCw className="size-4" />
                   )}

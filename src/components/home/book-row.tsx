@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { ChevronRight } from 'lucide-react';
 import { BookCard, type BookCardData } from '@/components/book/book-card';
+import { cn } from '@/lib/utils';
 import {
   Carousel,
   CarouselContent,
@@ -16,6 +17,8 @@ interface BookRowProps {
   showAllHref?: string;
   /** Рисовать ли номера позиций (для топов). */
   ranked?: boolean;
+  /** Полоса стоит на цветной ленте - приглушенные тона там не читаются. */
+  onBand?: boolean;
 }
 
 /**
@@ -28,7 +31,14 @@ interface BookRowProps {
  * Сами кнопки - подсказка для мыши: пальцем и колесом полоса листается
  * и без них, а на краях они гаснут сами.
  */
-export function BookRow({ title, subtitle, books, showAllHref, ranked }: BookRowProps) {
+export function BookRow({
+  title,
+  subtitle,
+  books,
+  showAllHref,
+  ranked,
+  onBand = false,
+}: BookRowProps) {
   if (books.length === 0) return null;
 
   return (
@@ -39,7 +49,11 @@ export function BookRow({ title, subtitle, books, showAllHref, ranked }: BookRow
       <div className="flex items-end justify-between gap-4">
         <div className="space-y-1">
           <h2 className="font-serif text-2xl leading-tight sm:text-3xl">{title}</h2>
-          {subtitle && <p className="text-sm text-muted-foreground">{subtitle}</p>}
+          {subtitle && (
+            <p className={cn('text-sm', onBand ? 'opacity-80' : 'text-muted-foreground')}>
+              {subtitle}
+            </p>
+          )}
         </div>
 
         <div className="flex shrink-0 items-center gap-2">
@@ -52,8 +66,18 @@ export function BookRow({ title, subtitle, books, showAllHref, ranked }: BookRow
               <ChevronRight className="size-4" aria-hidden="true" />
             </Link>
           )}
-          <CarouselPrevious className="static hidden translate-y-0 sm:inline-flex" />
-          <CarouselNext className="static hidden translate-y-0 sm:inline-flex" />
+          <CarouselPrevious
+            className={cn(
+              'static hidden translate-y-0 sm:inline-flex',
+              onBand && 'border-cream/40 bg-transparent text-cream hover:bg-cream/15',
+            )}
+          />
+          <CarouselNext
+            className={cn(
+              'static hidden translate-y-0 sm:inline-flex',
+              onBand && 'border-cream/40 bg-transparent text-cream hover:bg-cream/15',
+            )}
+          />
         </div>
       </div>
 
