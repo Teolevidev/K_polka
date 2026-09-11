@@ -75,6 +75,12 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
           >
             Выбор администратора
           </Link>
+          <Link
+            href="/admin/content"
+            className="font-medium text-primary hover:underline"
+          >
+            Контент-агент
+          </Link>
         </div>
       </header>
 

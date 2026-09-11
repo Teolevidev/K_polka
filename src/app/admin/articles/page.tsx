@@ -40,6 +40,9 @@ export default async function AdminArticlesPage() {
         <Link href="/admin/polls" className="text-primary hover:underline">
           Голосовалки
         </Link>
+        <Link href="/admin/content" className="text-primary hover:underline">
+          Контент-агент
+        </Link>
       </nav>
 
       {articles.length === 0 ? (

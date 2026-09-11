@@ -82,6 +82,16 @@ export default async function ArticlePage({ params }: PageProps) {
           {article.authorName && <span>· {article.authorName}</span>}
         </div>
 
+        {/* Редакционный текст назван редакционным.
+            Обзор, который читатель принял за мнение соседа по клубу, а
+            потом узнал правду, стоит дороже, чем эта строчка. */}
+        {article.authorIsEditorial && (
+          <p className="text-xs text-muted-foreground">
+            Редакционный материал: текст подготовлен редакцией клуба с
+            помощью ИИ и вычитан человеком перед публикацией.
+          </p>
+        )}
+
         <h1 className="text-3xl font-bold leading-tight sm:text-4xl">
           {article.title}
         </h1>

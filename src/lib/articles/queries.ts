@@ -19,6 +19,14 @@ export interface ArticleRow {
   likesCount: number;
   authorName: string | null;
   authorUsername: string | null;
+  /**
+   * Текст готовила редакция, а не участник клуба.
+   *
+   * Нужно на странице статьи: читателю честнее знать, что обзор писал
+   * не сосед по клубу. Флаг живет на профиле автора - авторство это
+   * свойство того, кто пишет, а не отдельной статьи.
+   */
+  authorIsEditorial: boolean;
   createdAt: string;
   updatedAt: string;
 }
@@ -26,7 +34,7 @@ export interface ArticleRow {
 const ARTICLE_SELECT =
   'id, slug, title, excerpt, body_md, cover_url, kind, status, published_at, ' +
   'related_book_ref, views_count, comments_count, likes_count, created_at, updated_at, ' +
-  'profiles(display_name, username)';
+  'profiles(display_name, username, is_editorial)';
 
 interface ArticleJoin {
   id: string;
@@ -44,7 +52,11 @@ interface ArticleJoin {
   likes_count: number;
   created_at: string;
   updated_at: string;
-  profiles: { display_name: string; username: string } | null;
+  profiles: {
+    display_name: string;
+    username: string;
+    is_editorial?: boolean | null;
+  } | null;
 }
 
 function toArticle(r: ArticleJoin): ArticleRow {
@@ -64,6 +76,7 @@ function toArticle(r: ArticleJoin): ArticleRow {
     likesCount: r.likes_count,
     authorName: r.profiles?.display_name ?? null,
     authorUsername: r.profiles?.username ?? null,
+    authorIsEditorial: Boolean(r.profiles?.is_editorial),
     createdAt: r.created_at,
     updatedAt: r.updated_at,
   };
