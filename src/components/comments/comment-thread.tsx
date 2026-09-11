@@ -91,7 +91,7 @@ export function CommentThread({
                   key={e}
                   type="button"
                   onClick={() => appendEmoji(e)}
-                  className="rounded px-1.5 py-0.5 text-base hover:bg-secondary"
+                  className="rounded px-1.5 py-0.5 text-base transition-colors hover:bg-highlight"
                 >
                   {e}
                 </button>

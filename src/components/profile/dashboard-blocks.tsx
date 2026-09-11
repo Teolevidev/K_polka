@@ -294,7 +294,7 @@ export function SuggestedBooks({ books }: { books: SuggestedBook[] }) {
           return (
             <li key={`${b.title}-${i}`}>
               {b.href ? (
-                <Link href={b.href} className="block hover:bg-secondary">
+                <Link href={b.href} className="block transition-colors hover:bg-highlight hover:text-highlight-foreground">
                   {row}
                 </Link>
               ) : (

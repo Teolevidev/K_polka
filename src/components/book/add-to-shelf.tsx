@@ -103,7 +103,7 @@ export function AddToShelf({
                 role="menuitem"
                 onClick={() => choose(s)}
                 className={cn(
-                  'flex w-full items-center gap-2.5 px-3 py-2.5 text-left text-sm transition-colors hover:bg-secondary',
+                  'flex w-full items-center gap-2.5 px-3 py-2.5 text-left text-sm transition-colors hover:bg-highlight hover:text-highlight-foreground',
                   s === status && 'text-primary',
                 )}
               >

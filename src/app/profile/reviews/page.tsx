@@ -74,7 +74,7 @@ export default async function MyReviewsPage({ searchParams }: PageProps) {
               'rounded-full border px-3 py-1 text-sm transition-colors',
               !filterYear
                 ? 'border-primary bg-primary text-primary-foreground'
-                : 'border-border hover:bg-secondary',
+                : 'border-border hover:border-highlight hover:bg-highlight hover:text-highlight-foreground',
             )}
           >
             Все
@@ -87,7 +87,7 @@ export default async function MyReviewsPage({ searchParams }: PageProps) {
                 'rounded-full border px-3 py-1 text-sm transition-colors',
                 filterYear === y
                   ? 'border-primary bg-primary text-primary-foreground'
-                  : 'border-border hover:bg-secondary',
+                  : 'border-border hover:border-highlight hover:bg-highlight hover:text-highlight-foreground',
               )}
             >
               {y}
