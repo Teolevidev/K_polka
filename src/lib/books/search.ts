@@ -8,6 +8,8 @@ import { detectQueryKind } from './isbn';
 import {
   normalizeText,
   fuzzyScore,
+  fuzzyMatch,
+  matchesQuery,
   preferredLanguage,
   detectScript,
 } from './normalize';
@@ -213,9 +215,21 @@ export function scoreBook(
   const nt = normalizeText(book.title);
 
   const titleText = [book.title, book.subtitle].filter(Boolean).join(' ');
-  const titleScore = fuzzyScore(query, titleText);
+
+  // Балл засчитывается, только если совпадение осмысленное. Google
+  // Books ищет по тексту книг, а не по названиям, и без этой проверки
+  // на «Сто лет одиночества» в выдачу лезли «Егор Летов. Моя оборона» и
+  // «Русские поэты за сто лет» - см. matchesQuery.
+  const titleMatch = fuzzyMatch(query, titleText);
+  const titleScore = matchesQuery(titleMatch) ? titleMatch.score : 0;
+
   const authorScore = book.authors.length
-    ? Math.max(...book.authors.map((a) => fuzzyScore(query, a)))
+    ? Math.max(
+        ...book.authors.map((a) => {
+          const m = fuzzyMatch(query, a);
+          return matchesQuery(m) ? m.score : 0;
+        }),
+      )
     : 0;
 
   // Совпадение по автору раньше было ослаблено множителем 0.85, из-за
@@ -392,7 +406,10 @@ export async function searchBooks(
       score: isbn ? 1 : scoreBook(book, query, preferredLang),
       sources: Array.from(sources),
     }))
-    .filter((b) => isbn || b.score >= 0.25);
+    // Порог поднят с 0.25: после проверки на осмысленность случайные
+    // совпадения обнуляются, и низкий балл теперь означает не «слабо
+    // похоже», а «похоже не тем местом».
+    .filter((b) => isbn || b.score >= 0.4);
 
   scored.sort(compareResults(preferredLang, isbn ? '' : query));
 
