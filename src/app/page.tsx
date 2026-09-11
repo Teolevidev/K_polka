@@ -19,6 +19,7 @@ import type { BookCardData } from '@/components/book/book-card';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
 import { SectionBand } from '@/components/layout/section-band';
+import { LampIllustration } from '@/components/layout/lamp-illustration';
 
 export default async function HomePage() {
   const configured = isSupabaseConfigured();
@@ -144,13 +145,26 @@ export default async function HomePage() {
           поверх карусели она бы наезжала на обложки на промежуточных
           ширинах, поэтому только поток. */}
       <SectionBand tone="forest" className="py-12 sm:py-14">
-        <BookRow
-          title="Выбор администратора этой недели"
-          subtitle="Пять книг, которые советует команда «Книжной полки»"
-          books={adminPicks}
-          showAllHref="/discover"
-          onBand
-        />
+        {/* Иллюстрация стоит отдельной колонкой, а не поверх полосы:
+            на промежуточных ширинах абсолютная картинка наезжала бы на
+            обложки. Колонка размечена как auto - пока файла лампы нет,
+            она схлопывается в ноль и пустого места не остается.
+            На узком экране лампа уходит наверх и уменьшается. */}
+        <div className="grid items-center gap-6 lg:grid-cols-[minmax(0,1fr)_auto] lg:gap-10">
+          <div className="order-2 min-w-0 lg:order-1">
+            <BookRow
+              title="Выбор администратора этой недели"
+              subtitle="Пять книг, которые советует команда «Книжной полки»"
+              books={adminPicks}
+              showAllHref="/discover"
+              onBand
+            />
+          </div>
+
+          <div className="order-1 mx-auto w-32 lg:order-2 lg:mx-0 lg:w-52">
+            <LampIllustration />
+          </div>
+        </div>
       </SectionBand>
     </div>
   );
