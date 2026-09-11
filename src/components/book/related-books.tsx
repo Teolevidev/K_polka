@@ -1,6 +1,6 @@
 import type { NormalizedBook } from '@/lib/books/types';
 import { encodeBookRef } from '@/lib/books/ref';
-import { getOtherEditions, getBooksByAuthor } from '@/lib/books/related';
+import { getBooksByAuthor } from '@/lib/books/related';
 import { BookCard } from './book-card';
 
 /**
@@ -65,11 +65,6 @@ export function RelatedRowSkeleton({ title }: { title: string }) {
       </div>
     </section>
   );
-}
-
-export async function OtherEditions({ book }: { book: NormalizedBook }) {
-  const books = await getOtherEditions(book);
-  return <RelatedRow title="Другие издания" books={books} />;
 }
 
 export async function AuthorBooks({ book }: { book: NormalizedBook }) {

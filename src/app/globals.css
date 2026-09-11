@@ -218,4 +218,34 @@
     line-height: 0.98;
     letter-spacing: -0.012em;
   }
+
+  /* Клетка сетки-индикатора: загорается и гаснет по кругу.
+     Задержка у каждой своя - из нее и складывается узор. */
+  .grid-loader-cell {
+    opacity: 0.18;
+    animation-name: grid-loader-blink;
+    animation-iteration-count: infinite;
+    animation-timing-function: ease-in-out;
+  }
+
+  @keyframes grid-loader-blink {
+    0%,
+    70%,
+    100% {
+      opacity: 0.18;
+    }
+    25%,
+    45% {
+      opacity: 1;
+    }
+  }
+
+  /* Уважаем системную настройку: сетка замирает, но не пропадает -
+     она все еще говорит, что процесс идет. */
+  @media (prefers-reduced-motion: reduce) {
+    .grid-loader-cell {
+      animation: none;
+      opacity: 0.55;
+    }
+  }
 }

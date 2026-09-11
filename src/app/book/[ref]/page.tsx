@@ -12,11 +12,7 @@ import { AddToShelf } from '@/components/book/add-to-shelf';
 import { BookDetails } from '@/components/book/book-details';
 import { BookAvailabilityBlock } from '@/components/book/book-availability';
 import { AuthorBlock, AuthorBlockSkeleton } from '@/components/book/author-block';
-import {
-  OtherEditions,
-  AuthorBooks,
-  RelatedRowSkeleton,
-} from '@/components/book/related-books';
+import { AuthorBooks, RelatedRowSkeleton } from '@/components/book/related-books';
 import { plural } from '@/lib/utils';
 import { localizeGenres } from '@/lib/books/genres';
 import { isSupabaseConfigured } from '@/lib/supabase/env';
@@ -24,7 +20,7 @@ import { getCurrentUser, createSupabaseServerClient } from '@/lib/supabase/serve
 import { getShelfStatusByRef } from '@/lib/shelf/queries';
 import { findCatalogBookIdByRef } from '@/lib/books/catalog';
 import { getBookReviews, getMyReviewForBook } from '@/lib/reviews/queries';
-import { ReviewList } from '@/components/reviews/review-list';
+import { ReviewsCarousel } from '@/components/reviews/reviews-carousel';
 import { ReviewForm } from '@/components/reviews/review-form';
 import { getReactionSummariesForTargets } from '@/lib/reactions';
 import { BackButton } from '@/components/layout/back-button';
@@ -202,10 +198,6 @@ export default async function BookPage({ params }: BookPageProps) {
         </Suspense>
       )}
 
-      <Suspense fallback={<RelatedRowSkeleton title="Другие издания" />}>
-        <OtherEditions book={book} />
-      </Suspense>
-
       {primaryAuthor && (
         <Suspense fallback={<RelatedRowSkeleton title="Другие книги автора" />}>
           <AuthorBooks book={book} />
@@ -220,7 +212,7 @@ export default async function BookPage({ params }: BookPageProps) {
           isSignedIn={Boolean(user)}
           initial={myReview}
         />
-        <ReviewList
+        <ReviewsCarousel
           reviews={reviews.filter((r) => !r.isMine)}
           emptyText="Будьте первым, кто оставит отзыв на эту книгу."
           reactionSummaries={reactionSummaries}

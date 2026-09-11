@@ -4,16 +4,13 @@ import { normalizeText, fuzzyScore } from './normalize';
 import { resolveCoverUrl } from './cover';
 
 /**
- * Соседние книги: другие издания того же произведения и другие книги
- * автора.
+ * Соседние книги: другие книги того же автора.
  *
- * У Google Books нет понятия «произведение» и нет метода «дай мне все
- * издания этого тома» - на сайте эти вкладки собираются поиском. Мы
- * делаем то же самое явными запросами: intitle+inauthor для изданий,
- * inauthor для библиографии автора.
+ * У Google Books нет метода «дай книги этого автора» - на сайте эта
+ * вкладка собирается поиском. Делаем то же самое явным запросом с
+ * оператором inauthor.
  */
 
-const EDITION_TITLE_THRESHOLD = 0.8;
 const AUTHOR_MATCH_THRESHOLD = 0.85;
 
 /** Кавычки внутри значения ломают операторы Google - выкидываем их. */
@@ -47,37 +44,6 @@ function dedupeByWork(
     if (out.length >= limit) break;
   }
   return out;
-}
-
-/**
- * Другие издания того же произведения.
- *
- * Название сверяем нечётко: у изданий встречаются подзаголовки и серии
- * («Спектр» / «Спектр: роман»), а вот чужие книги с похожим словом в
- * названии сюда попадать не должны.
- */
-export async function getOtherEditions(
-  book: NormalizedBook,
-  limit = 12,
-): Promise<NormalizedBook[]> {
-  const author = book.authors[0];
-  const query = author
-    ? `intitle:${quoted(book.title)} inauthor:${quoted(author)}`
-    : `intitle:${quoted(book.title)}`;
-
-  try {
-    const found = await searchGoogleBooks(query, { limit: 30 });
-    return dedupeByWork(
-      found,
-      (b) =>
-        isSameVolume(b, book) ||
-        fuzzyScore(book.title, b.title) < EDITION_TITLE_THRESHOLD,
-      limit,
-    );
-  } catch {
-    // Соседние блоки не должны ронять страницу книги.
-    return [];
-  }
 }
 
 /**

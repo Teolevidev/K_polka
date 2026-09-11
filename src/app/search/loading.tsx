@@ -1,19 +1,26 @@
-/** Скелет загрузки страницы поиска. */
+import { LoadingPill } from '@/components/ui/grid-loader';
+import { PageHeader } from '@/components/layout/page-header';
+
+/**
+ * Экран ожидания выдачи.
+ *
+ * Поиск опрашивает три каталога и ждет самый медленный из них, поэтому
+ * пауза заметная. Без этого экрана страница просто замирала на старой
+ * выдаче, и было непонятно, идет ли что-нибудь вообще.
+ *
+ * Шапка повторяет настоящую, чтобы при появлении результатов страница
+ * не прыгала.
+ */
 export default function SearchLoading() {
   return (
-    <div className="container space-y-6 py-6">
-      <div className="mx-auto max-w-xl space-y-2">
-        <div className="h-8 w-44 animate-pulse rounded bg-secondary" />
-        <div className="h-10 w-full animate-pulse rounded-full bg-secondary" />
-      </div>
-      <div className="grid grid-cols-3 gap-1 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8">
-        {Array.from({ length: 16 }).map((_, i) => (
-          <div key={i} className="space-y-2 p-2">
-            <div className="aspect-cover animate-pulse rounded-md bg-secondary" />
-            <div className="h-3 w-full animate-pulse rounded bg-secondary" />
-            <div className="h-3 w-2/3 animate-pulse rounded bg-secondary" />
-          </div>
-        ))}
+    <div>
+      <PageHeader
+        title="Поиск книг"
+        subtitle="Ищите по названию, автору или ISBN. Поиск понимает опечатки."
+        compact
+      />
+      <div className="container flex justify-center py-16">
+        <LoadingPill pattern="wave">Ищу в каталогах</LoadingPill>
       </div>
     </div>
   );

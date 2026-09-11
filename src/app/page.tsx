@@ -18,6 +18,7 @@ import { emptyStats } from '@/lib/stats';
 import type { BookCardData } from '@/components/book/book-card';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
+import { SectionBand } from '@/components/layout/section-band';
 
 export default async function HomePage() {
   const configured = isSupabaseConfigured();
@@ -133,13 +134,24 @@ export default async function HomePage() {
           </section>
         )}
 
+      </div>
+
+      {/* Выбор редакции - на зеленой ленте с узором, как первый экран:
+          страница начинается и заканчивается фирменным цветом.
+
+          Иллюстрация встанет отдельной колонкой справа, а на узком
+          экране - строкой над полосой. Абсолютным позиционированием
+          поверх карусели она бы наезжала на обложки на промежуточных
+          ширинах, поэтому только поток. */}
+      <SectionBand tone="forest" className="py-12 sm:py-14">
         <BookRow
           title="Выбор администратора этой недели"
           subtitle="Пять книг, которые советует команда «Книжной полки»"
           books={adminPicks}
           showAllHref="/discover"
+          onBand
         />
-      </div>
+      </SectionBand>
     </div>
   );
 }
